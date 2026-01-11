@@ -1,14 +1,14 @@
 {
-  "id": "com.vacation.mode",
-  "version": "0.0.1",
+  "id": "com.simulator.presence",
+  "version": "0.0.2",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
     "local"
   ],
   "name": {
-    "en": "Vacation Mode",
-    "nl": "Vakantie Modus"
+    "en": "Precense Simulator",
+    "nl": "Aanwezigheid Simulator"
   },
   "description": {
     "en": "Simulate presence by replaying your lighting patterns",
@@ -22,8 +22,8 @@
   ],
   "brandColor": "#00A0D2",
   "author": {
-    "name": "Community",
-    "email": "info@example.com"
+    "name": "Anoniemand",
+    "email": "github@anoniemand.com"
   },
   "images": {
     "small": "assets/images/small.jpg",
@@ -61,6 +61,10 @@
     "testLog": {
       "method": "POST",
       "path": "/test-log"
+    },
+    "generateTestData": {
+      "method": "POST",
+      "path": "/generate-test-data"
     }
   }
 }

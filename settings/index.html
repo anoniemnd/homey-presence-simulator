@@ -79,6 +79,14 @@
       background: #555;
     }
 
+    button.success {
+      background: #5cb85c;
+    }
+
+    button.success:hover {
+      background: #4cae4c;
+    }
+
     .status {
       padding: 12px;
       border-radius: 4px;
@@ -210,9 +218,7 @@
       overflow-y: auto;
       margin-top: 15px;
       user-select: text;
-      /* <- TOEVOEGEN: tekst kan geselecteerd worden */
       -webkit-user-select: text;
-      /* Voor Safari */
     }
 
     .log-entry {
@@ -247,28 +253,133 @@
       user-select: text;
       -webkit-user-select: text;
     }
-    
+
     optgroup {
       font-weight: bold;
       font-style: normal;
       color: #00A0D2;
       background: #f5f5f5;
     }
-    
+
     optgroup option {
       font-weight: normal;
       color: #333;
       padding-left: 20px;
     }
+
+    /* Modal Styles - Voeg toe aan <style> sectie */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .modal-message {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-buttons button {
+      margin: 0;
+    }
+
+    /* Lokale status berichten binnen cards */
+    .local-status {
+      display: none;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      font-size: 14px;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .local-status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+
+    .local-status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+
+    .local-status.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border-left: 4px solid #17a2b8;
+    }
+
+    .local-status.warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border-left: 4px solid #ffc107;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 
 <body>
+
   <h1>Vacation Mode Settings</h1>
 
   <div id="statusMessage" class="status"></div>
-
-  <div class="card">
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle">Bevestigen</div>
+      <div class="modal-message" id="modalMessage"></div>
+      <div class="modal-buttons">
+        <button class="secondary" onclick="closeModal(false)">Annuleren</button>
+        <button onclick="closeModal(true)">Bevestigen</button>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="card">
     <h2>Test Mode</h2>
     <div class="info-box">
       Test mode replays patterns every hour instead of every day. Perfect for testing!
@@ -280,7 +391,7 @@
       </label>
       <span class="status-text">Test mode (hourly replay)</span>
     </label>
-  </div>
+  </div> -->
 
   <div class="card">
     <h2>Vacation Mode</h2>
@@ -296,13 +407,14 @@
     </label>
   </div>
 
-  <div class="card">
+  <div class="card" id="trackedDevicesCard">
     <h2>Add Device to Track</h2>
     <label for="deviceSelect">Select a device with on/off capability:</label>
     <select id="deviceSelect">
       <option value="">Loading devices...</option>
     </select>
     <button onclick="addDevice()">Add Device</button>
+    <button onclick="generateTestData()" class="success">🧪 Generate Test Data</button>
   </div>
 
   <div class="card">
@@ -312,12 +424,13 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="historyCard">
     <h2>Event History</h2>
     <div class="info-box">
       View logged events to verify both ON and OFF events are being tracked
     </div>
     <button onclick="viewEvents()">View Events</button>
+    <button onclick="clearHistory()" class="secondary">Clear All History</button>
     <div id="eventsContainer" style="display: none; margin-top: 15px;">
       <div
         style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; border-radius: 4px;">
@@ -335,7 +448,6 @@
       <button onclick="viewLogs()">Refresh Logs</button>
       <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary">Enable Auto-refresh</button>
       <button onclick="clearLogDisplay()" class="secondary">Clear Display</button>
-      <button onclick="testLogging()">Test Logging</button>
       <button onclick="copyLogs()" class="secondary">Copy Logs</button>
     </div>
     <div id="logViewer" class="log-viewer" style="display: none;"></div>
@@ -344,26 +456,26 @@
   <div class="card">
     <h2>Actions</h2>
     <button onclick="saveSettings()">Save Settings</button>
-    <button onclick="clearHistory()" class="secondary">Clear All History</button>
   </div>
 
   <script>
     let availableDevices = [];
     let trackedDevices = [];
+    let autoRefreshInterval = null;
+    let autoRefreshEnabled = false;
 
     function onHomeyReady(Homey) {
       Homey.ready();
-
       loadSettings();
       loadDevices();
       loadTrackedDevices();
     }
+
     async function loadSettings() {
       try {
         const testMode = await Homey.get('testMode');
         document.getElementById('testMode').checked = testMode || false;
 
-        // Load vacation mode status
         const vacationMode = await Homey.get('vacationModeActive');
         document.getElementById('vacationMode').checked = vacationMode || false;
         document.getElementById('vacationStatus').textContent = vacationMode ? 'ON' : 'OFF';
@@ -386,14 +498,13 @@
 
         showStatus(`Vacation mode ${newState ? 'enabled' : 'disabled'}`, 'success');
       } catch (error) {
-        checkbox.checked = !newState; // Revert on error
+        checkbox.checked = !newState;
         showStatus('Failed to toggle vacation mode: ' + error.message, 'error');
       }
     }
 
     async function loadDevices() {
       try {
-        // Get devices via Homey API
         const result = await Homey.api('GET', '/devices');
 
         availableDevices = result.filter(device => {
@@ -403,7 +514,6 @@
         const select = document.getElementById('deviceSelect');
         select.innerHTML = '<option value="">-- Select a device --</option>';
 
-        // Group devices by zone
         const devicesByZone = {};
         availableDevices.forEach(device => {
           const zone = device.zoneName || 'No zone';
@@ -413,17 +523,14 @@
           devicesByZone[zone].push(device);
         });
 
-        // Sort zones alphabetically
         const sortedZones = Object.keys(devicesByZone).sort((a, b) => {
           return a.localeCompare(b, 'nl', { sensitivity: 'base' });
         });
 
-        // Create optgroups for each zone
         sortedZones.forEach(zoneName => {
           const optgroup = document.createElement('optgroup');
           optgroup.label = zoneName;
 
-          // Sort devices within zone alphabetically
           devicesByZone[zoneName]
             .sort((a, b) => a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' }))
             .forEach(device => {
@@ -458,19 +565,34 @@
           const device = allDevices.find(d => d.id === deviceId);
           if (!device) continue;
 
-          // Get history count
           const history = await Homey.get('deviceHistory');
           const eventCount = history && history[deviceId] ? history[deviceId].length : 0;
 
+          // Create item div
           const item = document.createElement('div');
           item.className = 'device-item';
-          item.innerHTML = `
-            <div>
-              <div class="device-name">${device.name}</div>
-              <div class="device-stats">${eventCount} events recorded</div>
-            </div>
-            <button class="remove-btn" onclick="removeDevice('${deviceId}')">Remove</button>
-          `;
+
+          // Create info div
+          const infoDiv = document.createElement('div');
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'device-name';
+          nameDiv.textContent = device.name;
+          const statsDiv = document.createElement('div');
+          statsDiv.className = 'device-stats';
+          statsDiv.textContent = eventCount + ' events recorded';
+          infoDiv.appendChild(nameDiv);
+          infoDiv.appendChild(statsDiv);
+
+          // Create button
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-btn';
+          removeBtn.textContent = 'Remove';
+          removeBtn.onclick = function () {
+            removeDeviceById(deviceId);
+          };
+
+          item.appendChild(infoDiv);
+          item.appendChild(removeBtn);
           container.appendChild(item);
         }
 
@@ -489,29 +611,81 @@
       }
 
       try {
-        // Call app API to start tracking
         await Homey.api('POST', '/track', { deviceId: deviceId });
-
         showStatus('Device added successfully!', 'success');
         select.value = '';
         await loadTrackedDevices();
-
       } catch (error) {
         showStatus('Failed to add device: ' + error.message, 'error');
       }
     }
 
-    async function removeDevice(deviceId) {
-      if (!confirm('Remove this device? History will be preserved.')) {
+    async function generateTestData() {
+      const select = document.getElementById('deviceSelect');
+      const deviceId = select.value;
+
+      if (!deviceId) {
+        // Toon error IN de testDataCard
+        showStatus('⚠️ Selecteer eerst een apparaat', 'error', 'trackedDevicesCard');
         return;
       }
 
+      const device = availableDevices.find(d => d.id === deviceId);
+
+      const confirmed = await showConfirmModal(
+        'Test data genereren',
+        `Test data genereren voor "${device.name}"?\n\nDit creëert realistische on/off events voor de afgelopen 7 dagen.`
+      );
+
+      if (!confirmed) return;
+
       try {
-        await Homey.api('POST', '/untrack', { deviceId: deviceId });
-        showStatus('Device removed', 'success');
+        showStatus('⏳ Test data wordt gegenereerd...', 'info', 'trackedDevicesCard');
+
+        await Homey.api('POST', '/generate-test-data', { deviceId: deviceId });
+
+        showStatus('✅ Test data succesvol gegenereerd!', 'success', 'trackedDevicesCard');
         await loadTrackedDevices();
       } catch (error) {
-        showStatus('Failed to remove device: ' + error.message, 'error');
+        showStatus('❌ Fout bij genereren: ' + error.message, 'error', 'trackedDevicesCard');
+      }
+    }
+
+    async function removeDeviceById(deviceId) {
+      try {
+        const allDevices = await Homey.api('GET', '/devices');
+        const device = allDevices.find(d => d.id === deviceId);
+        const deviceName = device ? device.name : deviceId;
+
+        const confirmed = await showConfirmModal(
+          'Apparaat verwijderen',
+          `"${deviceName}" verwijderen van tracking?`
+        );
+
+        if (!confirmed) return;
+
+        await Homey.api('POST', '/untrack', { deviceId: deviceId });
+        showStatus('✅ Apparaat verwijderd', 'success', 'trackedDevicesCard');
+        await loadTrackedDevices();
+      } catch (error) {
+        showStatus('❌ Fout: ' + error.message, 'error', 'trackedDevicesCard');
+      }
+    }
+
+    async function clearHistory() {
+      const confirmed = await showConfirmModal(
+        'Geschiedenis wissen',
+        'Weet je het zeker? Dit verwijdert alle opgenomen geschiedenis!'
+      );
+
+      if (!confirmed) return;
+
+      try {
+        await Homey.api('POST', '/clear-history');
+        showStatus('✅ Geschiedenis gewist', 'success', 'historyCard');
+        await loadTrackedDevices();
+      } catch (error) {
+        showStatus('❌ Fout: ' + error.message, 'error', 'historyCard');
       }
     }
 
@@ -519,39 +693,61 @@
       try {
         const testMode = document.getElementById('testMode').checked;
         await Homey.set('testMode', testMode);
-
-        // Notify app to reload settings
         await Homey.api('POST', '/reload-settings');
-
         showStatus('Settings saved!', 'success');
       } catch (error) {
         showStatus('Failed to save settings: ' + error.message, 'error');
       }
     }
 
-    async function clearHistory() {
-      if (!confirm('Are you sure? This will delete all recorded history!')) {
-        return;
-      }
-
+    // Enhanced status function met optionele container
+    function showStatus(message, type = 'info', containerId = null) {
       try {
-        await Homey.api('POST', '/clear-history');
-        showStatus('History cleared', 'success');
-        await loadTrackedDevices();
+        let statusElement;
+
+        if (containerId) {
+          // Zoek of maak een lokale status binnen de opgegeven container
+          const container = document.getElementById(containerId);
+          if (!container) {
+            console.warn(`Container '${containerId}' not found, using global status`);
+            containerId = null; // Fallback to global
+          } else {
+            statusElement = container.querySelector('.local-status');
+            if (!statusElement) {
+              // Maak een nieuwe lokale status
+              statusElement = document.createElement('div');
+              statusElement.className = 'local-status';
+              container.insertBefore(statusElement, container.firstChild);
+            }
+          }
+        }
+
+        // Fallback naar globale status
+        if (!containerId) {
+          statusElement = document.getElementById('status');
+          if (!statusElement) {
+            console.warn('Global status element not found');
+            return;
+          }
+        }
+
+        // Clear existing timeout voor dit specifieke element
+        if (statusElement.timeoutId) {
+          clearTimeout(statusElement.timeoutId);
+        }
+
+        statusElement.textContent = message;
+        statusElement.className = (containerId ? 'local-status' : 'status') + ' ' + type;
+        statusElement.style.display = 'block';
+
+        // Auto-hide after 5 seconds
+        statusElement.timeoutId = setTimeout(() => {
+          statusElement.style.display = 'none';
+        }, 5000);
+
       } catch (error) {
-        showStatus('Failed to clear history: ' + error.message, 'error');
+        console.error('showStatus failed:', error, message);
       }
-    }
-
-    function showStatus(message, type) {
-      const status = document.getElementById('statusMessage');
-      status.textContent = message;
-      status.className = 'status ' + type;
-      status.style.display = 'block';
-
-      setTimeout(() => {
-        status.style.display = 'none';
-      }, 5000);
     }
 
     async function viewEvents() {
@@ -560,14 +756,12 @@
 
       if (container.style.display === 'none') {
         try {
-          // Fetch events from API
           const response = await Homey.api('GET', '/events');
           const events = response.events || [];
 
           if (events.length === 0) {
             eventsList.innerHTML = '<p style="color: #999;">No events recorded yet</p>';
           } else {
-            // Sort by timestamp (newest first)
             events.sort((a, b) => b.timestamp - a.timestamp);
 
             let html = '<table style="width: 100%; border-collapse: collapse;">';
@@ -584,7 +778,6 @@
               const statusColor = event.value ? '#4CAF50' : '#f44336';
               const statusText = event.value ? 'ON' : 'OFF';
 
-              // Show day of week for normal mode, minute of hour for test mode
               let dayMinuteInfo = '';
               if (event.minuteOfHour !== undefined) {
                 dayMinuteInfo = `Minute: ${event.minuteOfHour}`;
@@ -597,7 +790,7 @@
 
               html += `<tr>
                 <td style="padding: 8px; border-bottom: 1px solid #eee;">${timeStr}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee;">${event.deviceName || event.deviceId}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(event.deviceName || event.deviceId)}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #eee; color: ${statusColor}; font-weight: bold;">${statusText}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; color: #666;">${dayMinuteInfo}</td>
               </tr>`;
@@ -632,9 +825,6 @@
       }
     }
 
-    let autoRefreshInterval = null;
-    let autoRefreshEnabled = false;
-
     async function viewLogs() {
       const logViewer = document.getElementById('logViewer');
 
@@ -646,7 +836,6 @@
           logViewer.innerHTML = '<div class="log-entry">No logs available</div>';
         } else {
           let html = '';
-          // Show newest logs first
           logs.slice().reverse().forEach(log => {
             const levelClass = log.level === 'error' ? 'log-error' : 'log-info';
             html += `<div class="log-entry ${levelClass}">`;
@@ -658,8 +847,6 @@
         }
 
         logViewer.style.display = 'block';
-
-        // Auto-scroll to bottom (newest entries)
         logViewer.scrollTop = 0;
 
       } catch (error) {
@@ -674,8 +861,8 @@
       if (autoRefreshEnabled) {
         btn.textContent = 'Disable Auto-refresh';
         btn.classList.remove('secondary');
-        viewLogs(); // Initial load
-        autoRefreshInterval = setInterval(viewLogs, 3000); // Refresh every 3 seconds
+        viewLogs();
+        autoRefreshInterval = setInterval(viewLogs, 3000);
       } else {
         btn.textContent = 'Enable Auto-refresh';
         btn.classList.add('secondary');
@@ -696,12 +883,24 @@
       div.textContent = text;
       return div.innerHTML;
     }
-    async function testLogging() {
-      try {
-        await Homey.api('POST', '/test-log');
-        showStatus('Test log sent', 'success');
-      } catch (error) {
-        showStatus('Test failed: ' + error.message, 'error');
+
+    // Modal helper functions
+    let modalResolve = null;
+
+    function showConfirmModal(title, message) {
+      return new Promise((resolve) => {
+        modalResolve = resolve;
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalMessage').textContent = message;
+        document.getElementById('confirmModal').classList.add('active');
+      });
+    }
+
+    function closeModal(confirmed) {
+      document.getElementById('confirmModal').classList.remove('active');
+      if (modalResolve) {
+        modalResolve(confirmed);
+        modalResolve = null;
       }
     }
   </script>

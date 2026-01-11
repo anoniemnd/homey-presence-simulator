@@ -4,25 +4,23 @@ const Homey = require('homey');
 
 class VacationModeApp extends Homey.App {
 
-// Belangrijke regel
-// Als je functie await gebruikt, moet deze async zijn. JavaScript staat niet toe dat je await gebruikt in een niet-async functie.
-// Samengevat: async functies kunnen "pauzes" inbouwen met await voor langzame operaties, terwijl reguliere functies alles direct uitvoeren. Dit voorkomt dat je hele app vastloopt tijdens tijdrovende taken.
-// Heb je nog vragen over specifieke functies in je code, of wil je weten waarom bepaalde functies wel/niet async zijn gemaakt?
-
   async onInit() {
-
     // Initialize log buffer
     this.recentLogs = [];
     this.maxLogs = 200;
 
+    // Detecteer timezone van Homey systeem
+    this.timezone = this.homey.clock.getTimezone();
+    
     this.logInfo('Vacation Mode app starting...');
+    this.logInfo(`Detected timezone: ${this.timezone}`);
 
     // Initialize state
     this.vacationModeActive = false;
     this.testMode = false;
-    this.trackedDevices = new Map(); // deviceId -> { listener, device }
-    this.deviceHistory = new Map(); // deviceId -> array of events
-    this.scheduledTimeouts = new Map(); // deviceId -> timeout reference
+    this.trackedDevices = new Map();
+    this.deviceHistory = new Map();
+    this.scheduledTimeouts = new Map();
 
     // Load saved state
     await this.loadState();
@@ -39,12 +37,28 @@ class VacationModeApp extends Homey.App {
     this.logInfo(`History contains ${this.deviceHistory.size} device histories`);
   }
 
+  // Helper om huidige datum/tijd in juiste timezone te krijgen
+  getCurrentDate() {
+    return new Date();
+  }
+
+  // Format datum voor logging in gebruiker's timezone
+  formatDate(date) {
+    if (!date) date = this.getCurrentDate();
+    return date.toLocaleString('nl-NL', { 
+      timeZone: this.timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
   // Helper function to log and store
   logInfo(message) {
-    const timestamp = new Date().toLocaleString('nl-NL', { 
-      timeZone: 'Europe/Amsterdam' 
-    });
-    //const timestamp = new Date().toLocaleString('nl-NL');
+    const timestamp = this.formatDate();
     this.recentLogs.push({
       timestamp,
       message: typeof message === 'string' ? message : JSON.stringify(message),
@@ -53,14 +67,11 @@ class VacationModeApp extends Homey.App {
     if (this.recentLogs.length > this.maxLogs) {
       this.recentLogs.shift();
     }
-    this.log(message);  // <- GEEN this.logInfo!
+    this.log(message);
   }
 
   logError(message) {
-    const timestamp = new Date().toLocaleString('nl-NL', { 
-      timeZone: 'Europe/Amsterdam' 
-    });
-    //const timestamp = new Date().toLocaleString('nl-NL');
+    const timestamp = this.formatDate();
     this.recentLogs.push({
       timestamp,
       message: typeof message === 'string' ? message : JSON.stringify(message),
@@ -69,30 +80,26 @@ class VacationModeApp extends Homey.App {
     if (this.recentLogs.length > this.maxLogs) {
       this.recentLogs.shift();
     }
-    this.error(message);  // <- GEEN this.logError!
+    this.error(message);
   }
 
   async loadState() {
     try {
-      // Load vacation mode state
       const savedVacationMode = this.homey.settings.get('vacationModeActive');
       if (savedVacationMode !== null) {
         this.vacationModeActive = savedVacationMode;
       }
 
-      // Load test mode
       const savedTestMode = this.homey.settings.get('testMode');
       if (savedTestMode !== null) {
         this.testMode = savedTestMode;
       }
 
-      // Load device history
       const savedHistory = this.homey.settings.get('deviceHistory');
       if (savedHistory) {
         this.deviceHistory = new Map(Object.entries(savedHistory));
       }
 
-      // Load tracked devices and restart tracking
       const savedTrackedDevices = this.homey.settings.get('trackedDevices');
       if (savedTrackedDevices && Array.isArray(savedTrackedDevices)) {
         this.logInfo(`Found ${savedTrackedDevices.length} devices to restore tracking for`);
@@ -110,11 +117,9 @@ class VacationModeApp extends Homey.App {
       this.logInfo('State loaded successfully');
       this.logInfo(`Currently tracking ${this.trackedDevices.size} devices`);
 
-      // If vacation mode was active, reschedule all actions
       if (this.vacationModeActive) {
         this.logInfo('Vacation mode was active, rescheduling actions after restart...');
 
-        // Wait a bit to ensure all devices are ready
         await this.homey.setTimeout(async () => {
           for (const [deviceId, history] of this.deviceHistory.entries()) {
             if (this.trackedDevices.has(deviceId)) {
@@ -125,56 +130,12 @@ class VacationModeApp extends Homey.App {
             }
           }
           this.logInfo('Actions rescheduled after restart');
-        }, 2000); // Wait 2 seconds
+        }, 2000);
       }
 
     } catch (error) {
       this.logError(`Error loading state: ${error.message}`);
       this.logError(error.stack);
-    }
-  }
-
-  async loadState() {
-    try {
-      // Load vacation mode state
-      const savedVacationMode = this.homey.settings.get('vacationModeActive');
-      if (savedVacationMode !== null) {
-        this.vacationModeActive = savedVacationMode;
-      }
-
-      // Load test mode
-      const savedTestMode = this.homey.settings.get('testMode');
-      if (savedTestMode !== null) {
-        this.testMode = savedTestMode;
-      }
-
-      // Load device history
-      const savedHistory = this.homey.settings.get('deviceHistory');
-      if (savedHistory) {
-        this.deviceHistory = new Map(Object.entries(savedHistory));
-      }
-
-      // Load tracked devices and restart tracking
-      const savedTrackedDevices = this.homey.settings.get('trackedDevices');
-      if (savedTrackedDevices && Array.isArray(savedTrackedDevices)) {
-        for (const deviceId of savedTrackedDevices) {
-          await this.startTrackingDevice(deviceId);
-        }
-      }
-
-      this.logInfo('State loaded successfully');
-
-      // NIEUW: If vacation mode was active, reschedule all actions
-      if (this.vacationModeActive) {
-        this.logInfo('Vacation mode was active, rescheduling actions after restart...');
-        for (const [deviceId, history] of this.deviceHistory.entries()) {
-          await this.scheduleNextAction(deviceId, history);
-        }
-        this.logInfo('Actions rescheduled after restart');
-      }
-
-    } catch (error) {
-      this.logError('Error loading state:', error);
     }
   }
 
@@ -225,7 +186,6 @@ class VacationModeApp extends Homey.App {
     }
 
     try {
-      // Get device via Homey API
       const { HomeyAPI } = require('homey-api');
       const api = await HomeyAPI.createAppAPI({ homey: this.homey });
       const device = await api.devices.getDevice({ id: deviceId });
@@ -237,28 +197,23 @@ class VacationModeApp extends Homey.App {
       this.logInfo(`Setting up listener for: ${device.name}`);
       this.logInfo(`Current onoff state: ${device.capabilitiesObj.onoff.value}`);
 
-      // Create capability listener with extra logging
       const listener = async (value) => {
         this.logInfo(`!!! LISTENER TRIGGERED !!! ${device.name} -> ${value}`);
         await this.recordDeviceEvent(deviceId, value);
       };
 
-      // Try multiple listener approaches
       try {
-        // Method 1: Direct capability listener
         device.capabilitiesObj.onoff.on('value', listener);
         this.logInfo(`Registered capabilitiesObj listener for ${device.name}`);
       } catch (err1) {
         this.logInfo(`Method 1 failed: ${err1.message}`);
 
         try {
-          // Method 2: makeCapabilityInstance
           await device.makeCapabilityInstance('onoff', listener);
           this.logInfo(`Registered makeCapabilityInstance listener for ${device.name}`);
         } catch (err2) {
           this.logInfo(`Method 2 failed: ${err2.message}`);
 
-          // Method 3: Poll the device periodically
           this.logInfo(`Falling back to polling method for ${device.name}`);
           const pollInterval = this.homey.setInterval(async () => {
             try {
@@ -274,9 +229,8 @@ class VacationModeApp extends Homey.App {
             } catch (pollErr) {
               this.logError(`Poll error for ${device.name}:`, pollErr);
             }
-          }, 5000); // Check every 5 seconds
+          }, 5000);
 
-          // Store the poll interval so we can clear it later
           this.trackedDevices.set(deviceId, {
             device,
             listener,
@@ -291,7 +245,6 @@ class VacationModeApp extends Homey.App {
         }
       }
 
-      // Store device and listener
       this.trackedDevices.set(deviceId, {
         device,
         listener,
@@ -299,7 +252,6 @@ class VacationModeApp extends Homey.App {
         lastValue: device.capabilitiesObj.onoff.value
       });
 
-      // Initialize history if not exists
       if (!this.deviceHistory.has(deviceId)) {
         this.deviceHistory.set(deviceId, []);
       }
@@ -322,13 +274,11 @@ class VacationModeApp extends Homey.App {
     try {
       const tracked = this.trackedDevices.get(deviceId);
 
-      // Stop polling if it exists
       if (tracked.pollInterval) {
         this.homey.clearInterval(tracked.pollInterval);
         this.logInfo(`Stopped polling for ${tracked.name}`);
       }
 
-      // Try to unregister listener
       if (tracked.device && tracked.listener) {
         try {
           tracked.device.capabilitiesObj.onoff.removeListener('value', tracked.listener);
@@ -353,10 +303,10 @@ class VacationModeApp extends Homey.App {
   }
 
   async recordDeviceEvent(deviceId, value) {
-    const now = new Date();
+    const now = this.getCurrentDate();
 
     const event = {
-      timestamp: now.getTime(), // Unix timestamp (ms) - makkelijker voor vergelijken
+      timestamp: now.getTime(),
       value: value,
       dayOfWeek: now.getDay(),
       hourOfDay: now.getHours(),
@@ -367,7 +317,6 @@ class VacationModeApp extends Homey.App {
     let history = this.deviceHistory.get(deviceId) || [];
     history.push(event);
 
-    // Keep last 7 days
     const keepDuration = 7 * 24 * 60 * 60 * 1000;
     const cutoffTime = Date.now() - keepDuration;
     history = history.filter(e => e.timestamp > cutoffTime);
@@ -375,7 +324,7 @@ class VacationModeApp extends Homey.App {
     this.deviceHistory.set(deviceId, history);
     await this.saveState();
 
-    const timeStr = now.toLocaleString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timeStr = this.formatDate(now);
 
     if (this.testMode) {
       this.logInfo(`Recorded: ${deviceId} -> ${value} at ${timeStr} (minute ${event.minuteOfHour})`);
@@ -383,7 +332,6 @@ class VacationModeApp extends Homey.App {
       this.logInfo(`Recorded: ${deviceId} -> ${value} at ${timeStr} (day ${event.dayOfWeek})`);
     }
   }
-
   async enableVacationMode() {
     if (this.vacationModeActive) {
       this.logInfo('Vacation mode already enabled');
@@ -396,11 +344,11 @@ class VacationModeApp extends Homey.App {
     this.logInfo('======================================');
     this.logInfo('Vacation mode ENABLED');
     this.logInfo(`Mode: ${this.testMode ? 'TEST (hourly replay)' : 'NORMAL (daily replay)'}`);
+    this.logInfo(`Timezone: ${this.timezone}`);
     this.logInfo(`Tracked devices: ${this.trackedDevices.size}`);
     this.logInfo(`Device history entries: ${this.deviceHistory.size}`);
     this.logInfo('======================================');
 
-    // Log each device's history
     for (const [deviceId, history] of this.deviceHistory.entries()) {
       const tracked = this.trackedDevices.get(deviceId);
       const deviceName = tracked ? tracked.name : deviceId;
@@ -412,14 +360,12 @@ class VacationModeApp extends Homey.App {
       }
     }
 
-    // Try to trigger flow card (might not exist)
     try {
       await this.homey.flow.getTriggerCard('vacation_mode_enabled').trigger();
     } catch (err) {
       this.logInfo('No vacation_mode_enabled trigger card');
     }
 
-    // Schedule actions for each device
     for (const [deviceId, history] of this.deviceHistory.entries()) {
       this.logInfo(`Scheduling actions for device: ${deviceId}`);
       await this.scheduleNextAction(deviceId, history);
@@ -444,7 +390,11 @@ class VacationModeApp extends Homey.App {
     }
     this.scheduledTimeouts.clear();
 
-    await this.homey.flow.getTriggerCard('vacation_mode_disabled').trigger();
+    try {
+      await this.homey.flow.getTriggerCard('vacation_mode_disabled').trigger();
+    } catch (err) {
+      this.logInfo('No vacation_mode_disabled trigger card');
+    }
   }
 
   async scheduleNextAction(deviceId, history) {
@@ -463,32 +413,27 @@ class VacationModeApp extends Homey.App {
       return;
     }
 
-    const now = new Date();
-    this.logInfo(`Current time: ${now.toLocaleString('nl-NL')}`);
+    const now = this.getCurrentDate();
+    this.logInfo(`Current time: ${this.formatDate(now)}`);
     this.logInfo(`Current minute: ${now.getMinutes()}`);
 
     let nextEvent = null;
     let minDelay = Infinity;
 
     if (this.testMode) {
-      // TEST MODE: Replay based on MINUTE of the hour
       const currentMinute = now.getMinutes();
       this.logInfo(`TEST MODE - Looking for events to replay (current minute: ${currentMinute})`);
 
-      // Log all events in history for debugging
       history.forEach((event, index) => {
         this.logInfo(`  Event ${index}: minute=${event.minuteOfHour}, value=${event.value}`);
       });
 
-      // Find events with matching minute
       for (const event of history) {
         let delayMinutes;
 
         if (event.minuteOfHour > currentMinute) {
-          // Event is later this hour
           delayMinutes = event.minuteOfHour - currentMinute;
         } else {
-          // Event is next hour
           delayMinutes = (60 - currentMinute) + event.minuteOfHour;
         }
 
@@ -502,13 +447,11 @@ class VacationModeApp extends Homey.App {
       }
 
     } else {
-      // NORMAL MODE: Replay based on DAY of week
       const currentDayOfWeek = now.getDay();
       const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
 
       this.logInfo(`NORMAL MODE - Current day: ${currentDayOfWeek}, time: ${currentTimeMinutes} mins`);
 
-      // Log all events
       history.forEach((event, index) => {
         this.logInfo(`  Event ${index}: day=${event.dayOfWeek}, time=${event.timeMinutes} mins, value=${event.value}`);
       });
@@ -545,10 +488,10 @@ class VacationModeApp extends Homey.App {
 
       if (this.testMode) {
         this.logInfo(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (at minute ${nextEvent.minuteOfHour})`);
-        this.logInfo(`  Will execute at: ${executeTime.toLocaleString('nl-NL')}`);
+        this.logInfo(`  Will execute at: ${this.formatDate(executeTime)}`);
       } else {
         this.logInfo(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (day ${nextEvent.dayOfWeek})`);
-        this.logInfo(`  Will execute at: ${executeTime.toLocaleString('nl-NL')}`);
+        this.logInfo(`  Will execute at: ${this.formatDate(executeTime)}`);
       }
 
       if (this.scheduledTimeouts.has(deviceId)) {
