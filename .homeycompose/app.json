@@ -1,0 +1,66 @@
+{
+  "id": "com.vacation.mode",
+  "version": "0.0.1",
+  "compatibility": ">=5.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Vacation Mode",
+    "nl": "Vakantie Modus"
+  },
+  "description": {
+    "en": "Simulate presence by replaying your lighting patterns",
+    "nl": "Simuleer aanwezigheid door verlichtingspatronen te herhalen"
+  },
+  "category": [
+    "security"
+  ],
+  "permissions": [
+    "homey:manager:api"
+  ],
+  "brandColor": "#00A0D2",
+  "author": {
+    "name": "Community",
+    "email": "info@example.com"
+  },
+  "images": {
+    "small": "assets/images/small.jpg",
+    "large": "assets/images/large.jpg"
+  },
+  "api": {
+    "getDevices": {
+      "method": "GET",
+      "path": "/devices"
+    },
+    "getEvents": {
+      "method": "GET",
+      "path": "/events"
+    },
+    "getLogs": {
+      "method": "GET",
+      "path": "/logs"
+    },
+    "trackDevice": {
+      "method": "POST",
+      "path": "/track"
+    },
+    "untrackDevice": {
+      "method": "POST",
+      "path": "/untrack"
+    },
+    "clearHistory": {
+      "method": "POST",
+      "path": "/clear-history"
+    },
+    "reloadSettings": {
+      "method": "POST",
+      "path": "/reload-settings"
+    },
+    "testLog": {
+      "method": "POST",
+      "path": "/test-log"
+    }
+  }
+}

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Vacation Mode Settings</title>
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+
+    h2 {
+      color: #00A0D2;
+      font-size: 18px;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    select,
+    input[type="checkbox"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    button {
+      background: #00A0D2;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background: #0087b5;
+    }
+
+    button.secondary {
+      background: #666;
+    }
+
+    button.secondary:hover {
+      background: #555;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .device-list {
+      margin-top: 15px;
+    }
+
+    .device-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .device-name {
+      font-weight: 500;
+    }
+
+    .device-stats {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .remove-btn {
+      background: #dc3545;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .remove-btn:hover {
+      background: #c82333;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #00A0D2;
+      padding: 12px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+      margin-right: 15px;
+      vertical-align: middle;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #00A0D2;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(26px);
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0;
+    }
+
+    .status-text {
+      font-weight: 500;
+      font-size: 16px;
+    }
+
+    .log-viewer {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 500px;
+      overflow-y: auto;
+      margin-top: 15px;
+      user-select: text;
+      /* <- TOEVOEGEN: tekst kan geselecteerd worden */
+      -webkit-user-select: text;
+      /* Voor Safari */
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+
+    .log-timestamp {
+      color: #858585;
+      margin-right: 10px;
+    }
+
+    .log-error {
+      color: #f48771;
+    }
+
+    .log-info {
+      color: #d4d4d4;
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .log-controls button {
+      flex: 1;
+    }
+
+    table {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    
+    optgroup {
+      font-weight: bold;
+      font-style: normal;
+      color: #00A0D2;
+      background: #f5f5f5;
+    }
+    
+    optgroup option {
+      font-weight: normal;
+      color: #333;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Vacation Mode Settings</h1>
+
+  <div id="statusMessage" class="status"></div>
+
+  <div class="card">
+    <h2>Test Mode</h2>
+    <div class="info-box">
+      Test mode replays patterns every hour instead of every day. Perfect for testing!
+    </div>
+    <label class="toggle-label">
+      <label class="switch">
+        <input type="checkbox" id="testMode" onchange="saveSettings()">
+        <span class="slider"></span>
+      </label>
+      <span class="status-text">Test mode (hourly replay)</span>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Vacation Mode</h2>
+    <div class="info-box">
+      Enable vacation mode to start replaying recorded patterns
+    </div>
+    <label class="toggle-label">
+      <label class="switch">
+        <input type="checkbox" id="vacationMode" onchange="toggleVacationMode()">
+        <span class="slider"></span>
+      </label>
+      <span class="status-text">Vacation mode is <span id="vacationStatus">OFF</span></span>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Add Device to Track</h2>
+    <label for="deviceSelect">Select a device with on/off capability:</label>
+    <select id="deviceSelect">
+      <option value="">Loading devices...</option>
+    </select>
+    <button onclick="addDevice()">Add Device</button>
+  </div>
+
+  <div class="card">
+    <h2>Tracked Devices</h2>
+    <div id="trackedDevices" class="device-list">
+      <p style="color: #999;">No devices tracked yet</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Event History</h2>
+    <div class="info-box">
+      View logged events to verify both ON and OFF events are being tracked
+    </div>
+    <button onclick="viewEvents()">View Events</button>
+    <div id="eventsContainer" style="display: none; margin-top: 15px;">
+      <div
+        style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+        <div id="eventsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Application Logs</h2>
+    <div class="info-box">
+      View real-time application logs for debugging
+    </div>
+    <div class="log-controls">
+      <button onclick="viewLogs()">Refresh Logs</button>
+      <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary">Enable Auto-refresh</button>
+      <button onclick="clearLogDisplay()" class="secondary">Clear Display</button>
+      <button onclick="testLogging()">Test Logging</button>
+      <button onclick="copyLogs()" class="secondary">Copy Logs</button>
+    </div>
+    <div id="logViewer" class="log-viewer" style="display: none;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Actions</h2>
+    <button onclick="saveSettings()">Save Settings</button>
+    <button onclick="clearHistory()" class="secondary">Clear All History</button>
+  </div>
+
+  <script>
+    let availableDevices = [];
+    let trackedDevices = [];
+
+    function onHomeyReady(Homey) {
+      Homey.ready();
+
+      loadSettings();
+      loadDevices();
+      loadTrackedDevices();
+    }
+    async function loadSettings() {
+      try {
+        const testMode = await Homey.get('testMode');
+        document.getElementById('testMode').checked = testMode || false;
+
+        // Load vacation mode status
+        const vacationMode = await Homey.get('vacationModeActive');
+        document.getElementById('vacationMode').checked = vacationMode || false;
+        document.getElementById('vacationStatus').textContent = vacationMode ? 'ON' : 'OFF';
+        document.getElementById('vacationStatus').style.color = vacationMode ? '#4CAF50' : '#f44336';
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+
+    async function toggleVacationMode() {
+      try {
+        const checkbox = document.getElementById('vacationMode');
+        const newState = checkbox.checked;
+
+        await Homey.set('vacationModeActive', newState);
+        await Homey.api('POST', '/reload-settings');
+
+        document.getElementById('vacationStatus').textContent = newState ? 'ON' : 'OFF';
+        document.getElementById('vacationStatus').style.color = newState ? '#4CAF50' : '#f44336';
+
+        showStatus(`Vacation mode ${newState ? 'enabled' : 'disabled'}`, 'success');
+      } catch (error) {
+        checkbox.checked = !newState; // Revert on error
+        showStatus('Failed to toggle vacation mode: ' + error.message, 'error');
+      }
+    }
+
+    async function loadDevices() {
+      try {
+        // Get devices via Homey API
+        const result = await Homey.api('GET', '/devices');
+
+        availableDevices = result.filter(device => {
+          return device.capabilitiesObj && device.capabilitiesObj.onoff;
+        });
+
+        const select = document.getElementById('deviceSelect');
+        select.innerHTML = '<option value="">-- Select a device --</option>';
+
+        // Group devices by zone
+        const devicesByZone = {};
+        availableDevices.forEach(device => {
+          const zone = device.zoneName || 'No zone';
+          if (!devicesByZone[zone]) {
+            devicesByZone[zone] = [];
+          }
+          devicesByZone[zone].push(device);
+        });
+
+        // Sort zones alphabetically
+        const sortedZones = Object.keys(devicesByZone).sort((a, b) => {
+          return a.localeCompare(b, 'nl', { sensitivity: 'base' });
+        });
+
+        // Create optgroups for each zone
+        sortedZones.forEach(zoneName => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = zoneName;
+
+          // Sort devices within zone alphabetically
+          devicesByZone[zoneName]
+            .sort((a, b) => a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' }))
+            .forEach(device => {
+              const option = document.createElement('option');
+              option.value = device.id;
+              option.textContent = device.name;
+              optgroup.appendChild(option);
+            });
+
+          select.appendChild(optgroup);
+        });
+
+      } catch (error) {
+        console.error('Load devices error:', error);
+        showStatus('Failed to load devices: ' + error.message, 'error');
+      }
+    }
+
+    async function loadTrackedDevices() {
+      try {
+        const deviceIds = await Homey.get('trackedDevices');
+        if (!deviceIds || deviceIds.length === 0) {
+          document.getElementById('trackedDevices').innerHTML = '<p style="color: #999;">No devices tracked yet</p>';
+          return;
+        }
+
+        const allDevices = await Homey.api('GET', '/devices');
+        const container = document.getElementById('trackedDevices');
+        container.innerHTML = '';
+
+        for (const deviceId of deviceIds) {
+          const device = allDevices.find(d => d.id === deviceId);
+          if (!device) continue;
+
+          // Get history count
+          const history = await Homey.get('deviceHistory');
+          const eventCount = history && history[deviceId] ? history[deviceId].length : 0;
+
+          const item = document.createElement('div');
+          item.className = 'device-item';
+          item.innerHTML = `
+            <div>
+              <div class="device-name">${device.name}</div>
+              <div class="device-stats">${eventCount} events recorded</div>
+            </div>
+            <button class="remove-btn" onclick="removeDevice('${deviceId}')">Remove</button>
+          `;
+          container.appendChild(item);
+        }
+
+      } catch (error) {
+        console.error('Error loading tracked devices:', error);
+      }
+    }
+
+    async function addDevice() {
+      const select = document.getElementById('deviceSelect');
+      const deviceId = select.value;
+
+      if (!deviceId) {
+        showStatus('Please select a device', 'error');
+        return;
+      }
+
+      try {
+        // Call app API to start tracking
+        await Homey.api('POST', '/track', { deviceId: deviceId });
+
+        showStatus('Device added successfully!', 'success');
+        select.value = '';
+        await loadTrackedDevices();
+
+      } catch (error) {
+        showStatus('Failed to add device: ' + error.message, 'error');
+      }
+    }
+
+    async function removeDevice(deviceId) {
+      if (!confirm('Remove this device? History will be preserved.')) {
+        return;
+      }
+
+      try {
+        await Homey.api('POST', '/untrack', { deviceId: deviceId });
+        showStatus('Device removed', 'success');
+        await loadTrackedDevices();
+      } catch (error) {
+        showStatus('Failed to remove device: ' + error.message, 'error');
+      }
+    }
+
+    async function saveSettings() {
+      try {
+        const testMode = document.getElementById('testMode').checked;
+        await Homey.set('testMode', testMode);
+
+        // Notify app to reload settings
+        await Homey.api('POST', '/reload-settings');
+
+        showStatus('Settings saved!', 'success');
+      } catch (error) {
+        showStatus('Failed to save settings: ' + error.message, 'error');
+      }
+    }
+
+    async function clearHistory() {
+      if (!confirm('Are you sure? This will delete all recorded history!')) {
+        return;
+      }
+
+      try {
+        await Homey.api('POST', '/clear-history');
+        showStatus('History cleared', 'success');
+        await loadTrackedDevices();
+      } catch (error) {
+        showStatus('Failed to clear history: ' + error.message, 'error');
+      }
+    }
+
+    function showStatus(message, type) {
+      const status = document.getElementById('statusMessage');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      status.style.display = 'block';
+
+      setTimeout(() => {
+        status.style.display = 'none';
+      }, 5000);
+    }
+
+    async function viewEvents() {
+      const container = document.getElementById('eventsContainer');
+      const eventsList = document.getElementById('eventsList');
+
+      if (container.style.display === 'none') {
+        try {
+          // Fetch events from API
+          const response = await Homey.api('GET', '/events');
+          const events = response.events || [];
+
+          if (events.length === 0) {
+            eventsList.innerHTML = '<p style="color: #999;">No events recorded yet</p>';
+          } else {
+            // Sort by timestamp (newest first)
+            events.sort((a, b) => b.timestamp - a.timestamp);
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="background: #eee; font-weight: bold;">';
+            html += '<th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Time</th>';
+            html += '<th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Device</th>';
+            html += '<th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Status</th>';
+            html += '<th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Info</th>';
+            html += '</tr></thead><tbody>';
+
+            events.forEach(event => {
+              const date = new Date(event.timestamp);
+              const timeStr = date.toLocaleString('nl-NL');
+              const statusColor = event.value ? '#4CAF50' : '#f44336';
+              const statusText = event.value ? 'ON' : 'OFF';
+
+              // Show day of week for normal mode, minute of hour for test mode
+              let dayMinuteInfo = '';
+              if (event.minuteOfHour !== undefined) {
+                dayMinuteInfo = `Minute: ${event.minuteOfHour}`;
+              } else if (event.dayOfWeek !== undefined) {
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const hours = Math.floor(event.timeMinutes / 60);
+                const mins = event.timeMinutes % 60;
+                dayMinuteInfo = `${days[event.dayOfWeek]} ${hours}:${mins.toString().padStart(2, '0')}`;
+              }
+
+              html += `<tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${timeStr}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${event.deviceName || event.deviceId}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; color: ${statusColor}; font-weight: bold;">${statusText}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; color: #666;">${dayMinuteInfo}</td>
+              </tr>`;
+            });
+
+            html += '</tbody></table>';
+            eventsList.innerHTML = html;
+          }
+
+          container.style.display = 'block';
+        } catch (error) {
+          showStatus('Failed to load events: ' + error.message, 'error');
+        }
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    async function copyLogs() {
+      try {
+        const response = await Homey.api('GET', '/logs');
+        const logs = response.logs || [];
+
+        let text = logs.slice().reverse().map(log => {
+          return `${log.timestamp} ${log.message}`;
+        }).join('\n');
+
+        await navigator.clipboard.writeText(text);
+        showStatus('Logs copied to clipboard!', 'success');
+      } catch (error) {
+        showStatus('Failed to copy logs: ' + error.message, 'error');
+      }
+    }
+
+    let autoRefreshInterval = null;
+    let autoRefreshEnabled = false;
+
+    async function viewLogs() {
+      const logViewer = document.getElementById('logViewer');
+
+      try {
+        const response = await Homey.api('GET', '/logs');
+        const logs = response.logs || [];
+
+        if (logs.length === 0) {
+          logViewer.innerHTML = '<div class="log-entry">No logs available</div>';
+        } else {
+          let html = '';
+          // Show newest logs first
+          logs.slice().reverse().forEach(log => {
+            const levelClass = log.level === 'error' ? 'log-error' : 'log-info';
+            html += `<div class="log-entry ${levelClass}">`;
+            html += `<span class="log-timestamp">${log.timestamp}</span>`;
+            html += `<span>${escapeHtml(log.message)}</span>`;
+            html += `</div>`;
+          });
+          logViewer.innerHTML = html;
+        }
+
+        logViewer.style.display = 'block';
+
+        // Auto-scroll to bottom (newest entries)
+        logViewer.scrollTop = 0;
+
+      } catch (error) {
+        showStatus('Failed to load logs: ' + error.message, 'error');
+      }
+    }
+
+    function toggleAutoRefresh() {
+      autoRefreshEnabled = !autoRefreshEnabled;
+      const btn = document.getElementById('autoRefreshBtn');
+
+      if (autoRefreshEnabled) {
+        btn.textContent = 'Disable Auto-refresh';
+        btn.classList.remove('secondary');
+        viewLogs(); // Initial load
+        autoRefreshInterval = setInterval(viewLogs, 3000); // Refresh every 3 seconds
+      } else {
+        btn.textContent = 'Enable Auto-refresh';
+        btn.classList.add('secondary');
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+        }
+      }
+    }
+
+    function clearLogDisplay() {
+      const logViewer = document.getElementById('logViewer');
+      logViewer.innerHTML = '<div class="log-entry">Log display cleared (logs still stored in app)</div>';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    async function testLogging() {
+      try {
+        await Homey.api('POST', '/test-log');
+        showStatus('Test log sent', 'success');
+      } catch (error) {
+        showStatus('Test failed: ' + error.message, 'error');
+      }
+    }
+  </script>
+</body>
+
+</html>
