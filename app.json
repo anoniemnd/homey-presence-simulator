@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.simulator.presence",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -72,40 +72,26 @@
     "conditions": [
       {
         "title": {
-          "en": "Vacationmode is enabled",
-          "nl": "Vakantiemodus is ingeschakeld"
+          "en": "Precense simulator is !{{disabled|enabled}}",
+          "nl": "Aanwezigheids simulator is !{{uitgeschakeld|ingeschakeld}}"
         },
-        "id": "vacation_mode_is_enabled"
+        "id": "precense_simulator_is_enabled"
       }
     ],
     "actions": [
       {
         "title": {
-          "en": "Disable vacation mode",
-          "nl": "Schakel vakantie modus uit"
+          "en": "Disable precense simulator",
+          "nl": "Schakel aanwezigheids simulator uit"
         },
-        "id": "disable_vacation_mode"
+        "id": "disable_precense_simulator"
       },
       {
         "title": {
-          "en": "Enable vacation mode",
-          "nl": "Schakel vakantie modus in"
+          "en": "Enable precense simulator",
+          "nl": "Schakel aanwezigheids simulator in"
         },
-        "id": "enable_vacation_mode"
-      },
-      {
-        "title": {
-          "en": "Start tracking device",
-          "nl": "Start bijhouden apparaat"
-        },
-        "id": "start_tracking_device"
-      },
-      {
-        "title": {
-          "en": "Stop tracking device",
-          "nl": "Stop bijhouden apparaat"
-        },
-        "id": "stop_tracking_device"
+        "id": "enable_precense_simulator"
       }
     ]
   }

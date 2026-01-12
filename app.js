@@ -11,7 +11,7 @@ class VacationModeApp extends Homey.App {
 
     // Detecteer timezone van Homey systeem
     this.timezone = this.homey.clock.getTimezone();
-    
+
     this.logInfo('Vacation Mode app starting...');
     this.logInfo(`Detected timezone: ${this.timezone}`);
 
@@ -45,7 +45,7 @@ class VacationModeApp extends Homey.App {
   // Format datum voor logging in gebruiker's timezone
   formatDate(date) {
     if (!date) date = this.getCurrentDate();
-    return date.toLocaleString('nl-NL', { 
+    return date.toLocaleString('nl-NL', {
       timeZone: this.timezone,
       year: 'numeric',
       month: '2-digit',
@@ -157,20 +157,27 @@ class VacationModeApp extends Homey.App {
 
   registerFlowCards() {
     try {
-      this.homey.flow.getActionCard('enable_vacation_mode')
+      this.homey.flow.getActionCard('enable_precense_simulator')
         .registerRunListener(async () => {
           await this.enableVacationMode();
         });
 
-      this.homey.flow.getActionCard('disable_vacation_mode')
+      this.homey.flow.getActionCard('disable_precense_simulator')
         .registerRunListener(async () => {
           await this.disableVacationMode();
         });
 
-      this.homey.flow.getConditionCard('vacation_mode_is_enabled')
+      this.homey.flow.getConditionCard('precense_simulator_is_enabled')
         .registerRunListener(async () => {
           return this.vacationModeActive;
         });
+
+      // this.homey.flow.getConditionCard('precense_simulator_is_enabled')
+      //   .registerRunListener(async (args, state) => {
+      //     this.log('Condition args:', JSON.stringify(args));
+      //     this.log('Vacation mode active:', this.vacationModeActive);
+      //     return this.vacationModeActive;
+      //   });
 
       this.logInfo('Flow cards registered successfully');
     } catch (error) {
