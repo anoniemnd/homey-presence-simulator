@@ -173,13 +173,6 @@ class VacationModeApp extends Homey.App {
           return this.vacationModeActive;
         });
 
-      // this.homey.flow.getConditionCard('precense_simulator_is_enabled')
-      //   .registerRunListener(async (args, state) => {
-      //     this.log('Condition args:', JSON.stringify(args));
-      //     this.log('Vacation mode active:', this.vacationModeActive);
-      //     return this.vacationModeActive;
-      //   });
-
       this.logInfo('Flow cards registered successfully');
     } catch (error) {
       this.logError('Error registering flow cards:', error);
@@ -408,6 +401,70 @@ class VacationModeApp extends Homey.App {
     }
   }
 
+  /**
+   * Calculate the next scheduled event from history
+   * @param {Array} history - Array of historical events
+   * @param {boolean} testMode - Whether in test mode (hourly) or normal mode (weekly)
+   * @returns {object} Object with nextEvent and minDelay, or null if no event found
+   */
+  calculateNextEvent(history, testMode) {
+    const now = new Date();
+    let nextEvent = null;
+    let minDelay = Infinity;
+
+    if (testMode) {
+      // TEST MODE: Hourly replay within the hour
+      const currentMinute = now.getMinutes();
+
+      for (const event of history) {
+        let delayMinutes;
+
+        if (event.minuteOfHour > currentMinute) {
+          delayMinutes = event.minuteOfHour - currentMinute;
+        } else {
+          delayMinutes = (60 - currentMinute) + event.minuteOfHour;
+        }
+
+        if (delayMinutes < minDelay && delayMinutes > 0) {
+          minDelay = delayMinutes;
+          nextEvent = event;
+        }
+      }
+    } else {
+      // NORMAL MODE: Weekly replay based on day and time
+      const currentDayOfWeek = now.getDay();
+      const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+
+      for (const event of history) {
+        let delayMinutes;
+
+        if (event.dayOfWeek === currentDayOfWeek) {
+          if (event.timeMinutes > currentTimeMinutes) {
+            delayMinutes = event.timeMinutes - currentTimeMinutes;
+          } else {
+            delayMinutes = (7 * 24 * 60) - currentTimeMinutes + event.timeMinutes;
+          }
+        } else {
+          let daysUntil = event.dayOfWeek - currentDayOfWeek;
+          if (daysUntil < 0) daysUntil += 7;
+
+          delayMinutes = (daysUntil * 24 * 60) - currentTimeMinutes + event.timeMinutes;
+        }
+
+        if (delayMinutes < minDelay && delayMinutes > 0) {
+          minDelay = delayMinutes;
+          nextEvent = event;
+        }
+      }
+    }
+
+    if (nextEvent && minDelay < Infinity) {
+      return { nextEvent, minDelay };
+    }
+
+    return null;
+  }
+
   async scheduleNextAction(deviceId, history) {
     this.logInfo(`--- scheduleNextAction called for ${deviceId} ---`);
     this.logInfo(`Vacation mode active: ${this.vacationModeActive}`);
@@ -428,72 +485,26 @@ class VacationModeApp extends Homey.App {
     this.logInfo(`Current time: ${this.formatDate(now)}`);
     this.logInfo(`Current minute: ${now.getMinutes()}`);
 
-    let nextEvent = null;
-    let minDelay = Infinity;
-
+    // Log history for debugging
     if (this.testMode) {
-      const currentMinute = now.getMinutes();
-      this.logInfo(`TEST MODE - Looking for events to replay (current minute: ${currentMinute})`);
-
+      this.logInfo(`TEST MODE - Looking for events to replay (current minute: ${now.getMinutes()})`);
       history.forEach((event, index) => {
         this.logInfo(`  Event ${index}: minute=${event.minuteOfHour}, value=${event.value}`);
       });
-
-      for (const event of history) {
-        let delayMinutes;
-
-        if (event.minuteOfHour > currentMinute) {
-          delayMinutes = event.minuteOfHour - currentMinute;
-        } else {
-          delayMinutes = (60 - currentMinute) + event.minuteOfHour;
-        }
-
-        this.logInfo(`  Checking event at minute ${event.minuteOfHour}: delay would be ${delayMinutes} min`);
-
-        if (delayMinutes < minDelay && delayMinutes > 0) {
-          minDelay = delayMinutes;
-          nextEvent = event;
-          this.logInfo(`    -> This is the closest event so far!`);
-        }
-      }
-
     } else {
       const currentDayOfWeek = now.getDay();
       const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-
       this.logInfo(`NORMAL MODE - Current day: ${currentDayOfWeek}, time: ${currentTimeMinutes} mins`);
-
       history.forEach((event, index) => {
         this.logInfo(`  Event ${index}: day=${event.dayOfWeek}, time=${event.timeMinutes} mins, value=${event.value}`);
       });
-
-      for (const event of history) {
-        let delayMinutes;
-
-        if (event.dayOfWeek === currentDayOfWeek) {
-          if (event.timeMinutes > currentTimeMinutes) {
-            delayMinutes = event.timeMinutes - currentTimeMinutes;
-          } else {
-            delayMinutes = (7 * 24 * 60) - currentTimeMinutes + event.timeMinutes;
-          }
-        } else {
-          let daysUntil = event.dayOfWeek - currentDayOfWeek;
-          if (daysUntil < 0) daysUntil += 7;
-
-          delayMinutes = (daysUntil * 24 * 60) - currentTimeMinutes + event.timeMinutes;
-        }
-
-        this.logInfo(`  Checking event on day ${event.dayOfWeek} at ${event.timeMinutes} mins: delay would be ${delayMinutes} min`);
-
-        if (delayMinutes < minDelay && delayMinutes > 0) {
-          minDelay = delayMinutes;
-          nextEvent = event;
-          this.logInfo(`    -> This is the closest event so far!`);
-        }
-      }
     }
 
-    if (nextEvent && minDelay < Infinity) {
+    // Calculate next event using helper method
+    const result = this.calculateNextEvent(history, this.testMode);
+
+    if (result) {
+      const { nextEvent, minDelay } = result;
       const delayMs = minDelay * 60 * 1000;
       const executeTime = new Date(Date.now() + delayMs);
 
@@ -523,6 +534,7 @@ class VacationModeApp extends Homey.App {
     this.logInfo(`--- end scheduleNextAction ---`);
   }
 
+
   async logScheduledOverview() {
     if (!this.vacationModeActive) {
       this.logInfo('Vacation mode not active - no scheduled actions');
@@ -538,49 +550,11 @@ class VacationModeApp extends Homey.App {
 
       if (!history || history.length === 0) continue;
 
-      const now = this.getCurrentDate();
-      const currentDayOfWeek = now.getDay();
-      const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+      // Calculate next event using helper method
+      const result = this.calculateNextEvent(history, this.testMode);
 
-      let nextEvent = null;
-      let minDelay = Infinity;
-
-      if (this.testMode) {
-        const currentMinute = now.getMinutes();
-        for (const event of history) {
-          let delayMinutes;
-          if (event.minuteOfHour > currentMinute) {
-            delayMinutes = event.minuteOfHour - currentMinute;
-          } else {
-            delayMinutes = (60 - currentMinute) + event.minuteOfHour;
-          }
-          if (delayMinutes < minDelay && delayMinutes > 0) {
-            minDelay = delayMinutes;
-            nextEvent = event;
-          }
-        }
-      } else {
-        for (const event of history) {
-          let delayMinutes;
-          if (event.dayOfWeek === currentDayOfWeek) {
-            if (event.timeMinutes > currentTimeMinutes) {
-              delayMinutes = event.timeMinutes - currentTimeMinutes;
-            } else {
-              delayMinutes = (7 * 24 * 60) - currentTimeMinutes + event.timeMinutes;
-            }
-          } else {
-            let daysUntil = event.dayOfWeek - currentDayOfWeek;
-            if (daysUntil < 0) daysUntil += 7;
-            delayMinutes = (daysUntil * 24 * 60) - currentTimeMinutes + event.timeMinutes;
-          }
-          if (delayMinutes < minDelay && delayMinutes > 0) {
-            minDelay = delayMinutes;
-            nextEvent = event;
-          }
-        }
-      }
-
-      if (nextEvent && minDelay < Infinity) {
+      if (result) {
+        const { nextEvent, minDelay } = result;
         const executeTime = new Date(Date.now() + minDelay * 60 * 1000);
         scheduledActions.push({
           deviceName: deviceName,

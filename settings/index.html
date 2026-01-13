@@ -48,7 +48,8 @@
         <input type="checkbox" id="vacationMode" onchange="toggleVacationMode()">
         <span class="slider"></span>
       </label>
-      <span class="status-text"><span data-i18n="settings.simulatorIs">Simulator is</span> <span id="vacationStatus">OFF</span></span>
+      <span class="status-text"><span data-i18n="settings.simulatorIs">Simulator is</span> <span
+          id="vacationStatus">OFF</span></span>
     </label>
   </div>
 
@@ -59,7 +60,23 @@
       Select one or more devices to start tracking their on/off patterns
     </div>
     <div id="deviceSelectorList" class="device-selector-list"></div>
-    <button onclick="addSelectedDevices()"><span data-i18n="settings.addSelectedDevices">Add Selected Devices</span> (<span id="selectedCount">0</span>)</button>
+
+
+    <!-- ✅ NIEUW: Import optie VAST bij de knop -->
+
+    <div class="import-history" style="display: flex; align-items: flex-start; gap: 10px;">
+      <input type="checkbox" id="importHistoryOnAdd" checked style="margin-top: 3px; width: auto; flex-shrink: 0;">
+      <div class="import-history-note">
+        <strong data-i18n="settings.checkboxImport">Importeer laatste events bij toevoegen</strong><br>
+        <div data-i18n="settings.checkboxImportNote">Haalt max. 50 recente aan/uit events op uit Homey Insights</div>
+      </div>
+
+    </div>
+
+    <button onclick="addSelectedDevices()">
+      <span data-i18n="settings.addSelectedDevices">Add Selected Devices</span>
+      (<span id="selectedCount">0</span>)
+    </button>
   </div>
 
   <!-- Tracked Devices -->
@@ -89,7 +106,8 @@
       </div>
       <div class="log-controls">
         <button onclick="viewLogs()" data-i18n="settings.refreshLogs">Refresh Logs</button>
-        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary" data-i18n="settings.enableAutoRefresh">Enable Auto-refresh</button>
+        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary"
+          data-i18n="settings.enableAutoRefresh">Enable Auto-refresh</button>
         <button onclick="clearLogDisplay()" class="secondary" data-i18n="settings.clearDisplay">Clear Display</button>
         <button onclick="copyLogs()" class="secondary" data-i18n="settings.copyLogs">Copy Logs</button>
       </div>

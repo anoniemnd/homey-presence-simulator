@@ -1,6 +1,6 @@
 {
   "id": "com.simulator.presence",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -41,6 +41,14 @@
     "getEvents": {
       "method": "GET",
       "path": "/events"
+    },
+    "getDeviceInsights": {
+      "method": "GET",
+      "path": "/device-insights"
+    },
+    "importDeviceHistory": {
+      "method": "GET",
+      "path": "/import-device-history"
     },
     "getLogs": {
       "method": "GET",

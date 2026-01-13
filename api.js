@@ -1,12 +1,79 @@
 'use strict';
 const { HomeyAPI } = require('homey-api');
 
+/**
+ * Check if a device is a group
+ * @param {object} device - The device object to check
+ * @returns {boolean} True if the device is a group
+ */
+function isDeviceGroup(device) {
+    // Check driver URI for group drivers
+    const driverCheck = (device.driverUri && device.driverUri.includes('homey:virtualdrivergroup:driver')) ||
+                       (device.driver && device.driver.includes('homey:virtualdrivergroup:driver')) ||
+                       (device.driverUri && device.driverUri.includes('homey:app:com.sdn.group')) ||
+                       (device.driver && device.driver.includes('homey:app:com.sdn.group'));
+
+    // Check device class properties
+    const classCheck = device.class === 'group' ||
+                      device.virtualClass === 'group' ||
+                      device.virtual === true;
+
+    // Check settings for deviceIds array (group property)
+    const settingsCheck = device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds);
+
+    return driverCheck || classCheck || settingsCheck;
+}
+
 exports.getDevices = async function ({ homey }) {
+    const app = homey.app;
     const api = await HomeyAPI.createAppAPI({ homey });
     const devices = await api.devices.getDevices();
     const zones = await api.zones.getZones();
+
+    // Get tracked devices to check for groups
+    const trackedDeviceIds = Array.from(app.trackedDevices.keys());
+    const devicesInTrackedGroups = new Set();
+
+    // Find all devices that are part of tracked groups
+    for (const deviceId of trackedDeviceIds) {
+        const device = devices[deviceId];
+        if (device && isDeviceGroup(device)) {
+            // This is a tracked group, add all its member devices to the exclusion set
+            if (device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds)) {
+                device.settings.deviceIds.forEach(id => devicesInTrackedGroups.add(id));
+            }
+        }
+    }
+
     const devicesArray = Object.values(devices)
-        .filter(device => device.capabilitiesObj && device.capabilitiesObj.onoff)
+        .filter(device => {
+            // Check of het een onoff capability heeft
+            const hasOnOff = device.capabilitiesObj && device.capabilitiesObj.onoff;
+
+            // Skip devices that are part of a tracked group
+            const isPartOfTrackedGroup = devicesInTrackedGroups.has(device.id);
+
+            // Filter op device class: alleen lights en sockets
+            const isLightOrSocket = device.class === 'light' || device.class === 'socket';
+
+            // Voor groepen: check of de member devices light of socket zijn
+            const isGroup = isDeviceGroup(device);
+            let isValidGroup = false;
+
+            if (isGroup && device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds)) {
+                // Check of ten minste één member device een light of socket is
+                isValidGroup = device.settings.deviceIds.some(memberId => {
+                    const memberDevice = devices[memberId];
+                    return memberDevice && (memberDevice.class === 'light' || memberDevice.class === 'socket');
+                });
+            }
+
+            // Accepteer devices die:
+            // - onoff capability hebben
+            // - NIET onderdeel zijn van een getracked groep
+            // - light of socket zijn, OF een groep met light/socket members
+            return hasOnOff && !isPartOfTrackedGroup && (isLightOrSocket || isValidGroup);
+        })
         .map(device => {
             let zoneName = 'No zone';
             let zoneId = null;
@@ -41,8 +108,50 @@ exports.getLogs = async function ({ homey }) {
 exports.trackDevice = async function ({ homey, body }) {
     const app = homey.app;
     const { deviceId } = body;
+
+    // Check if this is a group and if any of its member devices are already tracked
+    const { HomeyAPI } = require('homey-api');
+    const api = await HomeyAPI.createAppAPI({ homey });
+    const device = await api.devices.getDevice({ id: deviceId });
+
+    const removedDevices = [];
+
+    const isGroup = isDeviceGroup(device);
+    app.logInfo(`trackDevice: ${device.name} (${deviceId}) - isGroup: ${isGroup}`);
+
+    if (isGroup) {
+        app.logInfo(`Device settings: ${JSON.stringify(device.settings)}`);
+        app.logInfo(`Has deviceIds: ${device.settings && device.settings.deviceIds ? device.settings.deviceIds.length : 'NO'}`);
+
+        // This is a group, check if any member devices are tracked
+        if (device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds)) {
+            app.logInfo(`Checking ${device.settings.deviceIds.length} member devices`);
+
+            for (const memberDeviceId of device.settings.deviceIds) {
+                app.logInfo(`Checking member device: ${memberDeviceId}, tracked: ${app.trackedDevices.has(memberDeviceId)}`);
+
+                if (app.trackedDevices.has(memberDeviceId)) {
+                    // This member device is tracked, remove it
+                    const memberDevice = app.trackedDevices.get(memberDeviceId);
+                    await app.stopTrackingDevice(memberDeviceId);
+                    removedDevices.push({
+                        id: memberDeviceId,
+                        name: memberDevice.name
+                    });
+                    app.logInfo(`Auto-removed tracked device ${memberDevice.name} (${memberDeviceId}) because its group is now being tracked`);
+                }
+            }
+        } else {
+            app.logInfo(`Group has no deviceIds in settings`);
+        }
+    }
+
     await app.startTrackingDevice(deviceId);
-    return { success: true };
+
+    return {
+        success: true,
+        removedDevices: removedDevices
+    };
 };
 
 exports.untrackDevice = async function ({ homey, body }) {
@@ -52,11 +161,23 @@ exports.untrackDevice = async function ({ homey, body }) {
     return { success: true };
 };
 
-exports.clearHistory = async function ({ homey }) {
+exports.clearHistory = async function ({ homey, body }) {
     const app = homey.app;
-    app.deviceHistory.clear();
+    const { deviceId } = body;
+
+    if (!deviceId) {
+        throw new Error('deviceId parameter is required');
+    }
+
+    // Clear history in app memory
+    if (app.deviceHistory.has(deviceId)) {
+        app.deviceHistory.delete(deviceId);
+        app.log(`History cleared for device ${deviceId}`);
+    }
+
+    // Save state to persist the change
     await app.saveState();
-    app.log('History cleared via settings');
+
     return { success: true };
 };
 
@@ -89,13 +210,6 @@ exports.reloadSettings = async function ({ homey }) {
     return { success: true };
 };
 
-exports.testLog = async function ({ homey }) {
-    const app = homey.app;
-    app.logInfo('🔥 TEST LOG MESSAGE 🔥');
-    app.logInfo('This is a test to see if logging works');
-    return { success: true };
-};
-
 exports.getEvents = async function ({ homey }) {
     const app = homey.app;
     const api = await HomeyAPI.createAppAPI({ homey });
@@ -115,7 +229,6 @@ exports.getEvents = async function ({ homey }) {
     return { events: allEvents };
 };
 
-// NIEUW: Genereer testdata voor een specifiek device
 exports.generateTestData = async function ({ homey, body }) {
     const app = homey.app;
     const { deviceId } = body;
@@ -126,34 +239,22 @@ exports.generateTestData = async function ({ homey, body }) {
 
     app.logInfo(`Generating test data for device: ${deviceId}`);
 
-    // Haal huidige history op (of maak nieuwe aan)
     let history = app.deviceHistory.get(deviceId) || [];
-
-    // Gebruik het HUIDIGE tijdstip als basis
     const now = new Date();
     const eventsGenerated = [];
 
-    // Genereer een realistisch schakelpatroon (3-5 schakelmomenten)
-    // Bijvoorbeeld: lamp gaat aan, kort later uit, later weer aan, en uiteindelijk uit
     const switchPatterns = [
-        { minutesOffset: -5, value: false },  // 5 min geleden: lamp was uit
-        { minutesOffset: 0, value: true },    // Nu: lamp gaat aan
-        { minutesOffset: 2, value: false },   // 2 min later: lamp gaat uit
-        { minutesOffset: 8, value: true },    // 8 min later: lamp gaat weer aan
-        { minutesOffset: 15, value: false }   // 15 min later: lamp gaat uit
+        { minutesOffset: -5, value: false },
+        { minutesOffset: 0, value: true },
+        { minutesOffset: 2, value: false },
+        { minutesOffset: 8, value: true },
+        { minutesOffset: 15, value: false }
     ];
 
-    // Genereer events voor exact EEN WEEK GELEDEN
     switchPatterns.forEach(pattern => {
         const eventDate = new Date(now);
-        
-        // Ga 7 dagen terug
         eventDate.setDate(eventDate.getDate() - 7);
-        
-        // Voeg de minuten offset toe
         eventDate.setMinutes(eventDate.getMinutes() + pattern.minutesOffset);
-        
-        // Voeg een kleine random variatie toe (0-30 seconden)
         const randomSeconds = Math.floor(Math.random() * 31);
         eventDate.setSeconds(randomSeconds);
         eventDate.setMilliseconds(0);
@@ -171,10 +272,7 @@ exports.generateTestData = async function ({ homey, body }) {
         eventsGenerated.push(event);
     });
 
-    // Sorteer op timestamp
     history.sort((a, b) => a.timestamp - b.timestamp);
-
-    // Bewaar in deviceHistory
     app.deviceHistory.set(deviceId, history);
     await app.saveState();
 
@@ -190,75 +288,263 @@ exports.generateTestData = async function ({ homey, body }) {
     };
 };
 
-// // NIEUW: Genereer testdata voor een specifiek device
-// exports.generateTestData = async function ({ homey, body }) {
-//     const app = homey.app;
-//     const { deviceId } = body;
+exports.getDeviceInsights = async function ({ homey, query }) {
+    const app = homey.app;
+    const { deviceId } = query;
     
-//     if (!deviceId) {
-//         throw new Error('No deviceId provided');
-//     }
+    if (!deviceId) {
+        throw new Error('deviceId parameter is required');
+    }
     
-//     app.logInfo(`Generating test data for device: ${deviceId}`);
-    
-//     // Haal huidige history op (of maak nieuwe aan)
-//     let history = app.deviceHistory.get(deviceId) || [];
-    
-//     // Genereer data voor de afgelopen 7 dagen
-//     const now = new Date();
-//     const eventsGenerated = [];
-    
-//     // Patronen per dag (realistische lamp timings)
-//     const patterns = [
-//         // Ochtend (7:00-9:00)
-//         { hour: 7, minute: 15, value: true },
-//         { hour: 8, minute: 45, value: false },
+    try {
+        const { HomeyAPI } = require('homey-api');
+        const api = await HomeyAPI.createAppAPI({ homey });
         
-//         // Middag/avond (17:00-23:00)
-//         { hour: 17, minute: 30, value: true },
-//         { hour: 19, minute: 15, value: false },
-//         { hour: 20, minute: 0, value: true },
-//         { hour: 22, minute: 30, value: false },
-//         { hour: 23, minute: 15, value: false }, // Extra off voor zekerheid
-//     ];
-    
-//     // Genereer voor elke dag van de afgelopen week
-//     for (let daysAgo = 7; daysAgo >= 0; daysAgo--) {
-//         const date = new Date(now);
-//         date.setDate(date.getDate() - daysAgo);
+        const device = await api.devices.getDevice({ id: deviceId });
+
+        // Check of het een groep is
+        const isGroup = isDeviceGroup(device);
+
+        app.logInfo(`Device ${deviceId} (${device.name}) is ${isGroup ? 'a GROUP' : 'NOT a group'}`);
+
+        if (isGroup) {
+            
+            // Check of de groep devices heeft
+            if (!device.settings || !device.settings.deviceIds || device.settings.deviceIds.length === 0) {
+                return {
+                    success: false,
+                    error: 'Group has no devices',
+                    isGroup: true
+                };
+            }
+            
+            // Gebruik het eerste device uit de groep
+            const firstDeviceId = device.settings.deviceIds[0];
+            app.logInfo(`Using first device from group: ${firstDeviceId}`);
+            
+            // Recursief aanroepen met het device uit de groep
+            return await exports.getDeviceInsights({ homey, query: { deviceId: firstDeviceId } });
+        }
         
-//         // Voor elke dag, genereer events volgens pattern
-//         patterns.forEach(pattern => {
-//             const eventDate = new Date(date);
-//             eventDate.setHours(pattern.hour, pattern.minute, 0, 0);
+        // Check of device de onoff capability heeft
+        if (!device.capabilitiesObj || !device.capabilitiesObj.onoff) {
+            return {
+                success: false,
+                error: 'Device does not have onoff capability',
+                availableCapabilities: Object.keys(device.capabilitiesObj || {})
+            };
+        }
+        
+        app.logInfo(`Getting insights for device ${deviceId} (${device.name})`);
+        
+        const insights = await api.insights.getLogs();
+        const insightLogs = Object.values(insights);
+        
+        app.logInfo(`Found ${insightLogs.length} total insight logs`);
+        
+        let onoffLog = null;
+        for (const log of insightLogs) {
+            if (log.ownerUri === device.uri && log.uri.includes(':onoff')) {
+                onoffLog = log;
+                app.logInfo(`Found matching onoff log: ${log.id}`);
+                break;
+            }
+        }
+        
+        if (!onoffLog) {
+            return {
+                success: false,
+                error: 'No onoff insights log found for this device',
+                deviceUri: device.uri,
+                availableLogs: insightLogs
+                    .filter(log => log.ownerUri === device.uri)
+                    .map(log => ({ id: log.id, uri: log.uri, title: log.title }))
+            };
+        }
+        
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        const entries = await onoffLog.getEntries({
+            from: sevenDaysAgo.toISOString(),
+            to: now.toISOString(),
+            resolution: 'native'
+        });
+
+        app.logInfo(`Retrieved ${entries.values ? entries.values.length : 0} insight entries`);
+        
+        return {
+            success: true,
+            entries: entries,
+            logInfo: {
+                id: onoffLog.id,
+                uri: onoffLog.uri,
+                title: onoffLog.title,
+                type: onoffLog.type
+            },
+            deviceInfo: {
+                id: device.id,
+                name: device.name,
+                uri: device.uri
+            }
+        };
+        
+    } catch (error) {
+        app.logError(`Error getting insights for ${deviceId}: ${error.message}`);
+        app.logError(error.stack);
+        return { 
+            success: false, 
+            error: error.message,
+            stack: error.stack
+        };
+    }
+};
+
+exports.importDeviceHistory = async function ({ homey, query }) {
+    const app = homey.app;
+    const { deviceId } = query;
+    
+    if (!deviceId) {
+        throw new Error('deviceId parameter is required');
+    }
+    
+    try {
+        app.logInfo(`Starting import of Insights history for device ${deviceId}`);
+        const api = await HomeyAPI.createAppAPI({ homey });
+        const device = await api.devices.getDevice({ id: deviceId });
+        
+        // ✅ DEBUG: Log alle device properties
+        app.logInfo(`Device properties: ${JSON.stringify({
+            id: device.id,
+            name: device.name,
+            driverUri: device.driverUri,
+            class: device.class,
+            virtualClass: device.virtualClass,
+            virtual: device.virtual,
+            hasSettings: !!device.settings,
+            settingsDevices: device.settings ? device.settings.devices : null
+        })}`);
+        
+        // ✅ Check of het een groep is
+        const isGroup = device.driverUri && device.driverUri.includes('homey:virtualdrivergroup:driver');
+        
+        if (isGroup) {
+            app.logInfo(`Device ${deviceId} (${device.name}) is a GROUP, getting history from first device`);
             
-//             const event = {
-//                 timestamp: eventDate.getTime(),
-//                 value: pattern.value,
-//                 dayOfWeek: eventDate.getDay(),
-//                 hourOfDay: eventDate.getHours(),
-//                 minuteOfHour: eventDate.getMinutes(),
-//                 timeMinutes: eventDate.getHours() * 60 + eventDate.getMinutes()
-//             };
+            // Check of de groep devices heeft
+            if (!device.settings || !device.settings.deviceIds || device.settings.deviceIds.length === 0) {
+                return {
+                    success: false,
+                    error: 'Group has no devices to import from',
+                    imported: 0
+                };
+            }
             
-//             history.push(event);
-//             eventsGenerated.push(event);
-//         });
-//     }
-    
-//     // Sorteer op timestamp
-//     history.sort((a, b) => a.timestamp - b.timestamp);
-    
-//     // Bewaar in deviceHistory
-//     app.deviceHistory.set(deviceId, history);
-//     await app.saveState();
-    
-//     app.logInfo(`✓ Generated ${eventsGenerated.length} test events for ${deviceId}`);
-//     app.logInfo(`Total history size: ${history.length} events`);
-    
-//     return { 
-//         success: true, 
-//         eventsGenerated: eventsGenerated.length,
-//         totalEvents: history.length
-//     };
-// };
+            // Gebruik het eerste device uit de groep
+            const firstDeviceId = device.settings.deviceIds[0];
+            app.logInfo(`Using first device from group: ${firstDeviceId}`);
+            
+            // Recursief aanroepen met het device uit de groep
+            const result = await exports.importDeviceHistory({ homey, query: { deviceId: firstDeviceId } });
+            
+            // Als succesvol, kopieer de history ook naar de groep zelf
+            if (result.success && result.imported > 0) {
+                const firstDeviceHistory = app.deviceHistory.get(firstDeviceId);
+                if (firstDeviceHistory) {
+                    app.deviceHistory.set(deviceId, [...firstDeviceHistory]);
+                    await app.saveState();
+                    app.logInfo(`Copied ${firstDeviceHistory.length} events to group ${deviceId}`);
+                }
+            }
+            
+            return result;
+        }
+        
+        // Haal Insights data op (max 50 entries)
+        const insightsResult = await exports.getDeviceInsights({ homey, query: { deviceId } });
+        
+        if (!insightsResult.success) {
+            return {
+                success: false,
+                error: insightsResult.error,
+                imported: 0
+            };
+        }
+        
+        if (!insightsResult.entries || !insightsResult.entries.values || insightsResult.entries.values.length === 0) {
+            return {
+                success: true,
+                imported: 0,
+                message: 'No entries found in Insights'
+            };
+        }
+        
+        // Converteer Insights entries naar lokale event formaat
+        const importedEvents = insightsResult.entries.values.map(entry => {
+            const date = new Date(entry.t);
+            return {
+                timestamp: date.getTime(),
+                value: entry.v === true || entry.v === 1,
+                dayOfWeek: date.getDay(),
+                hourOfDay: date.getHours(),
+                minuteOfHour: date.getMinutes(),
+                timeMinutes: date.getHours() * 60 + date.getMinutes(),
+                source: 'insights-import'
+            };
+        });
+        
+        // Sorteer op timestamp (oudste eerst)
+        importedEvents.sort((a, b) => a.timestamp - b.timestamp);
+        
+        // Haal bestaande history op
+        let history = app.deviceHistory.get(deviceId) || [];
+        
+        // Check welke events al bestaan
+        const existingTimestamps = new Set(history.map(e => e.timestamp));
+        
+        // Filter alleen nieuwe events
+        const newEvents = importedEvents.filter(e => !existingTimestamps.has(e.timestamp));
+        
+        // Voeg nieuwe events toe
+        history.push(...newEvents);
+        
+        // Sorteer de volledige array
+        history.sort((a, b) => a.timestamp - b.timestamp);
+        
+        // Limiteer totale history size (max 10000 events)
+        const MAX_EVENTS = 10000;
+        if (history.length > MAX_EVENTS) {
+            history = history.slice(-MAX_EVENTS);
+        }
+        
+        // Update de Map
+        app.deviceHistory.set(deviceId, history);
+        
+        // Sla op
+        await app.saveState();
+        
+        const oldestEvent = importedEvents[0];
+        const newestEvent = importedEvents[importedEvents.length - 1];
+        const timeSpanDays = (newestEvent.timestamp - oldestEvent.timestamp) / (1000 * 60 * 60 * 24);
+        
+        app.logInfo(`Imported ${newEvents.length} new events (${importedEvents.length - newEvents.length} duplicates skipped)`);
+        
+        return {
+            success: true,
+            imported: newEvents.length,
+            duplicatesSkipped: importedEvents.length - newEvents.length,
+            totalEvents: importedEvents.length,
+            timeSpanDays: Math.round(timeSpanDays * 10) / 10,
+            oldestDate: new Date(oldestEvent.timestamp).toISOString(),
+            newestDate: new Date(newestEvent.timestamp).toISOString()
+        };
+        
+    } catch (error) {
+        app.logError(`Error importing Insights history: ${error.message}`);
+        return {
+            success: false,
+            error: error.message,
+            imported: 0
+        };
+    }
+};

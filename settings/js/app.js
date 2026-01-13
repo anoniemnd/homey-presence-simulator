@@ -6,7 +6,7 @@
 // ========================================
 // CONFIGURATION
 // ========================================
-const DEBUG = true; // Set to false for production
+const DEBUG = false; // Set to true for development/debugging
 
 // ========================================
 // GLOBAL STATE
@@ -48,23 +48,3 @@ function onHomeyReady(HomeyAPI) {
   console.log(`Language: ${Homey.__ ? 'Homey i18n active' : 'No i18n'}`);
 }
 
-/**
- * Helper function to translate a key
- * @param {string} key - Translation key (e.g., 'settings.pageTitle')
- * @param {object} args - Optional arguments for string interpolation
- * @returns {string} Translated string
- */
-// function __(key, args) {
-//   // IMPORTANT: Don't create recursion - use Homey.__ directly
-//   if (!window.Homey || typeof window.Homey.__ !== 'function') {
-//     console.warn('Homey i18n not available');
-//     return key;
-//   }
-//   // Call Homey's __ function directly
-//   return window.Homey.__(key, args);
-// }
-
-// Make __ globally available WITHOUT overwriting it
-// if (!window.__) {
-//   window.__ = __;
-// }

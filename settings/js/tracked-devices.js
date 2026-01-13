@@ -61,6 +61,12 @@ function renderDeviceCard(device, deviceId, eventCount, lastEventTime, events) {
             <div class="dropdown-item" onclick="generateTestDataForDevice('${deviceId}', '${escapeHtml(device.name)}')">
               ${__('settings.generateTestData')}
             </div>
+            <div class="dropdown-item" onclick="viewDeviceHistoryRaw('${deviceId}', '${escapeHtml(device.name)}')">
+              ${__('settings.viewHistoryRaw')}
+            </div>
+            <div class="dropdown-item" onclick="importDeviceHistoryFromInsights('${deviceId}', '${escapeHtml(device.name)}')">
+              ${__('settings.importFromInsights')}
+            </div>
                 `
       : ''
     }
@@ -295,16 +301,12 @@ async function clearDeviceHistory(deviceId, deviceName) {
   if (!confirmed) return;
 
   try {
-    // Get current history
-    const history = await Homey.get('deviceHistory');
-
-    // Remove this device's history
-    if (history && history[deviceId]) {
-      delete history[deviceId];
-      await Homey.set('deviceHistory', history);
-    }
+    // Call backend API to clear history (this updates app memory and saves state)
+    await Homey.api('POST', '/clear-history', { deviceId });
 
     showStatus(__('settings.historyCleared', { name: deviceName }), 'success');
+
+    // Reload tracked devices to reflect the change immediately
     await loadTrackedDevices();
   } catch (error) {
     showStatus(__('settings.failedToClear') + ': ' + error.message, 'error');
@@ -357,5 +359,159 @@ async function generateTestDataForDevice(deviceId, deviceName) {
     await loadTrackedDevices();
   } catch (error) {
     showStatus(__('settings.failedToGenerate') + ': ' + error.message, 'error');
+  }
+}
+
+/**
+ * View raw device history (debug)
+ */
+async function viewDeviceHistoryRaw(deviceId) {
+  try {
+    const result = await Homey.api('GET', `/device-insights?deviceId=${deviceId}`);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    let content = '<h3>Raw Device Insights Data</h3>';
+
+    if (result.success) {
+      // ✅ NIEUW: Toon debug info bovenaan
+      content += `<div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+        <h4 style="margin-top: 0;">📊 Data Statistics:</h4>
+        <strong>Log Info:</strong><br>
+        • ID: ${result.logInfo.id}<br>
+        • URI: ${result.logInfo.uri}<br>
+        • Title: ${result.logInfo.title}<br>
+        <br>
+        <strong>Entries Info:</strong><br>
+        • Total Entries Retrieved: <strong>${result.entries.values ? result.entries.values.length : 0}</strong><br>
+        • Available Keys: ${Object.keys(result.entries).join(', ')}<br>
+      `;
+
+      // Toon eerste en laatste entry timestamps
+      if (result.entries.values && result.entries.values.length > 0) {
+        const firstEntry = result.entries.values[0];
+        const lastEntry = result.entries.values[result.entries.values.length - 1];
+        const firstDate = new Date(firstEntry.t);
+        const lastDate = new Date(lastEntry.t);
+
+        content += `<br><strong>Time Range:</strong><br>
+        • Oldest: ${firstDate.toLocaleString('nl-NL')} (${firstEntry.v ? 'ON' : 'OFF'})<br>
+        • Newest: ${lastDate.toLocaleString('nl-NL')} (${lastEntry.v ? 'ON' : 'OFF'})<br>
+        • Time Span: ${Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24) * 10) / 10} dagen
+        `;
+      }
+
+      content += `</div>`;
+
+      content += '<h4>Raw JSON:</h4>';
+      content += `<pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto; max-height: 400px; font-size: 12px;">${JSON.stringify(result, null, 2)}</pre>`;
+
+      if (result.entries.values && result.entries.values.length > 0) {
+        content += '<h4>Formatted Entries (laatste 20):</h4>';
+        content += '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">';
+        content += '<thead><tr style="background: #007bff; color: white;"><th style="padding: 8px; border: 1px solid #ddd;">Timestamp</th><th style="padding: 8px; border: 1px solid #ddd;">Date/Time</th><th style="padding: 8px; border: 1px solid #ddd;">Value (on/off)</th></tr></thead>';
+        content += '<tbody>';
+
+        const entriesToShow = result.entries.values.slice(0, 20);
+        entriesToShow.forEach(entry => {
+          const date = new Date(entry.t);  // ✅ Direct, geen * 1000
+          const dateStr = date.toLocaleString('nl-NL');
+          const valueStr = entry.v === true || entry.v === 1 ? '🟢 ON' : '🔴 OFF';
+          content += `<tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">${entry.t}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${dateStr}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${valueStr}</td>
+          </tr>`;
+        });
+
+        content += '</tbody></table>';
+
+        if (result.entries.values.length > 20) {
+          content += `<p style="margin-top: 10px; font-style: italic;">... en nog ${result.entries.values.length - 20} entries meer</p>`;
+        }
+      }
+    } else {
+      content += `<div style="color: red; padding: 15px; background: #fee; border-radius: 5px;">
+        <strong>Error:</strong> ${result.error || 'Unknown error'}<br><br>
+        ${result.availableLogs ? `<strong>Available logs:</strong> ${result.availableLogs.join(', ')}` : ''}
+      </div>`;
+
+      content += '<h4>Full Response:</h4>';
+      content += `<pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto; max-height: 400px;">${JSON.stringify(result, null, 2)}</pre>`;
+    }
+
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+        ${content}
+        <div style="margin-top: 20px; text-align: right;">
+          <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Sluiten</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+
+  } catch (error) {
+    console.error('Error viewing device history:', error);
+    alert(`Error: ${error.message}`);
+  }
+}
+
+/**
+ * Import device history from Homey Insights
+ */
+async function importDeviceHistoryFromInsights(deviceId, deviceName) {
+  try {
+    showStatus('Data wordt geïmporteerd...', 'info');
+
+    const result = await Homey.api('GET', `/import-device-history?deviceId=${deviceId}`);
+
+    if (result.success) {
+      let message = `✅ Import succesvol!\n\n`;
+      message += `Geïmporteerd: ${result.imported} nieuwe events\n`;
+      
+      if (result.duplicatesSkipped > 0) {
+        message += `Duplicaten overgeslagen: ${result.duplicatesSkipped}\n`;
+      }
+      
+      message += `Totaal beschikbaar: ${result.totalEvents} events (max 50 van Insights)\n`;
+      message += `Tijdspanne: ${result.timeSpanDays} dagen\n\n`;
+      message += `Van: ${new Date(result.oldestDate).toLocaleString('nl-NL')}\n`;
+      message += `Tot: ${new Date(result.newestDate).toLocaleString('nl-NL')}\n\n`;
+      message += `ℹ️ Let op: Homey Insights API geeft maximaal 50 entries. Voor betere pattern detection blijft de app nieuwe events real-time loggen.`;
+
+      await showConfirmModal('Import Succesvol', message);
+      
+      // Reload tracked devices om nieuwe data te tonen
+      await loadTrackedDevices();
+      
+    } else {
+      showStatus(`❌ Import mislukt: ${result.error}`, 'error');
+    }
+
+  } catch (error) {
+    console.error('Error importing history:', error);
+    showStatus(`Error: ${error.message}`, 'error');
+  }
+}
+
+/**
+ * Copy text to clipboard
+ */
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus(__('settings.copiedToClipboard'), 'success');
+  } catch (error) {
+    showStatus(__('settings.copyFailed'), 'error');
   }
 }

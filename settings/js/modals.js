@@ -9,6 +9,30 @@ if (typeof modalResolve === 'undefined') {
 }
 
 /**
+ * Show info modal (single OK button)
+ * @param {string} title - Modal title
+ * @param {string} message - Modal message
+ * @returns {Promise<void>}
+ */
+function showInfoModal(title, message) {
+  return new Promise((resolve) => {
+    modalResolve = resolve;
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+
+    // Hide cancel button, show only confirm button
+    const buttons = document.querySelectorAll('#confirmModal button');
+    if (buttons[0]) buttons[0].style.display = 'none'; // Cancel button
+    if (buttons[1]) {
+      buttons[1].textContent = __('settings.ok');
+      buttons[1].style.display = 'block';
+    }
+
+    document.getElementById('confirmModal').classList.add('active');
+  });
+}
+
+/**
  * Show confirmation modal
  * @param {string} title - Modal title
  * @param {string} message - Modal message
@@ -19,12 +43,18 @@ function showConfirmModal(title, message) {
     modalResolve = resolve;
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalMessage').textContent = message;
-    
-    // Update button text
+
+    // Show both buttons
     const buttons = document.querySelectorAll('#confirmModal button');
-    if (buttons[0]) buttons[0].textContent = __('settings.cancel');
-    if (buttons[1]) buttons[1].textContent = __('settings.confirm');
-    
+    if (buttons[0]) {
+      buttons[0].textContent = __('settings.cancel');
+      buttons[0].style.display = 'block';
+    }
+    if (buttons[1]) {
+      buttons[1].textContent = __('settings.confirm');
+      buttons[1].style.display = 'block';
+    }
+
     document.getElementById('confirmModal').classList.add('active');
   });
 }
