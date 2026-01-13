@@ -23,7 +23,7 @@ async function loadDevices() {
     renderDeviceSelector();
   } catch (error) {
     console.error('Load devices error:', error);
-    showStatus('Failed to load devices: ' + error.message, 'error');
+    showStatus(__('settings.failedToLoad') + ': ' + error.message, 'error');
   }
 }
 
@@ -42,11 +42,11 @@ function renderDeviceSelector() {
   });
 
   const zones = Object.keys(devicesByZone).sort((a, b) => 
-    a.localeCompare(b, 'nl', { sensitivity: 'base' })
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
   );
 
   if (zones.length === 0) {
-    container.innerHTML = '<p style="padding: 15px; color: #999;">All devices are already tracked</p>';
+    container.innerHTML = `<p style="padding: 15px; color: #999;">${__('settings.allDevicesTracked')}</p>`;
     return;
   }
 
@@ -103,7 +103,15 @@ function toggleDeviceSelection(deviceId) {
  * Update selected device counter
  */
 function updateSelectedCount() {
-  document.getElementById('selectedCount').textContent = selectedDeviceIds.size;
+  const btn = document.querySelector('button[onclick="addSelectedDevices()"]');
+  if (btn) {
+    btn.innerHTML = `<span data-i18n="settings.addSelectedDevices">${__('settings.addSelectedDevices')}</span> (<span id="selectedCount">${selectedDeviceIds.size}</span>)`;
+  } else {
+    const countSpan = document.getElementById('selectedCount');
+    if (countSpan) {
+      countSpan.textContent = selectedDeviceIds.size;
+    }
+  }
 }
 
 /**
@@ -111,7 +119,7 @@ function updateSelectedCount() {
  */
 async function addSelectedDevices() {
   if (selectedDeviceIds.size === 0) {
-    showStatus('Please select at least one device', 'error');
+    showStatus(__('settings.selectAtLeastOne'), 'error');
     return;
   }
 
@@ -120,11 +128,11 @@ async function addSelectedDevices() {
       await Homey.api('POST', '/track', { deviceId });
     }
 
-    showStatus(`Successfully added ${selectedDeviceIds.size} device(s)`, 'success');
+    showStatus(__('settings.deviceAdded', { count: selectedDeviceIds.size }), 'success');
     selectedDeviceIds.clear();
     await loadDevices();
     await loadTrackedDevices();
   } catch (error) {
-    showStatus('Failed to add devices: ' + error.message, 'error');
+    showStatus(__('settings.failedToAdd') + ': ' + error.message, 'error');
   }
 }

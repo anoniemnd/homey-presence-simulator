@@ -12,8 +12,8 @@ async function loadTrackedDevices() {
   try {
     const deviceIds = await Homey.get('trackedDevices');
     if (!deviceIds || deviceIds.length === 0) {
-      document.getElementById('trackedDevices').innerHTML = 
-        '<p class="text-muted">No devices tracked yet</p>';
+      document.getElementById('trackedDevices').innerHTML =
+        `<p class="text-muted">${__('settings.noDevicesTracked')}</p>`;
       return;
     }
 
@@ -29,7 +29,7 @@ async function loadTrackedDevices() {
       const deviceEvents = eventsData.events.filter(e => e.deviceId === deviceId);
       const eventCount = deviceEvents.length;
       const lastEvent = deviceEvents.length > 0 ? deviceEvents[0] : null;
-      const lastEventTime = lastEvent ? formatRelativeTime(lastEvent.timestamp) : 'never';
+      const lastEventTime = lastEvent ? formatRelativeTime(lastEvent.timestamp) : __('settings.never');
 
       const cardHtml = renderDeviceCard(device, deviceId, eventCount, lastEventTime, deviceEvents);
       container.insertAdjacentHTML('beforeend', cardHtml);
@@ -45,28 +45,33 @@ async function loadTrackedDevices() {
  */
 function renderDeviceCard(device, deviceId, eventCount, lastEventTime, events) {
   const isExpanded = expandedDevices.has(deviceId);
-  
+
   return `
     <div class="device-card ${isExpanded ? 'expanded' : ''}" id="card-${deviceId}">
       <div class="device-header" onclick="toggleDeviceCard('${deviceId}', event)">
         <div class="device-info-left">
           <div class="device-name">${escapeHtml(device.name)}</div>
-          <div class="device-stats">${eventCount} events • Last: ${lastEventTime}</div>
+          <div class="device-stats">${eventCount} ${__('settings.events')} • ${__('settings.last')}: ${lastEventTime}</div>
         </div>
         <div class="device-actions">
           <button class="icon-btn menu-btn" onclick="toggleDeviceMenu(event, '${deviceId}')">⋮</button>
           <div id="menu-${deviceId}" class="dropdown-menu">
+          ${DEBUG
+      ? `
             <div class="dropdown-item" onclick="generateTestDataForDevice('${deviceId}', '${escapeHtml(device.name)}')">
-              🧪 Generate Test Data
+              ${__('settings.generateTestData')}
             </div>
+                `
+      : ''
+    }
             <div class="dropdown-item" onclick="viewDeviceEvents('${deviceId}', '${escapeHtml(device.name)}')">
-              📊 View All Events
+              ${__('settings.viewAllEventsMenu')}
             </div>
             <div class="dropdown-item" onclick="clearDeviceHistory('${deviceId}', '${escapeHtml(device.name)}')">
-              🗑️ Clear History
+              ${__('settings.clearHistory')}
             </div>
             <div class="dropdown-item danger" onclick="removeDeviceById('${deviceId}')">
-              ❌ Remove Device
+              ${__('settings.removeDevice')}
             </div>
           </div>
         </div>
@@ -84,39 +89,41 @@ function renderDeviceCard(device, deviceId, eventCount, lastEventTime, events) {
  */
 function renderDeviceTimeline(events) {
   if (events.length === 0) {
-    return '<div class="no-events-message">No events recorded yet</div>';
+    return `<div class="no-events-message">${__('settings.noEventsRecorded')}</div>`;
   }
 
   // Group events by day of week
   const eventsByDay = {};
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
+  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
   events.forEach(event => {
-    const day = days[event.dayOfWeek];
-    if (!eventsByDay[day]) eventsByDay[day] = [];
-    eventsByDay[day].push(event);
+    const dayKey = days[event.dayOfWeek];
+    if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
+    eventsByDay[dayKey].push(event);
   });
 
-  let html = '<div class="timeline-section"><h3>📊 Weekly Pattern</h3>';
-  
+  let html = `<div class="events-section"><h3 class="events-subtitle">${__('settings.weeklyPattern')}</h3>`;
+
   // Render timeline for each day
-  days.forEach(day => {
-    const dayEvents = eventsByDay[day] || [];
+  days.forEach(dayKey => {
+    const dayEvents = eventsByDay[dayKey] || [];
+    const dayLabel = __('settings.' + dayKey);
+
     html += `<div class="timeline-day">
-      <div class="timeline-label">${day}</div>
+      <div class="timeline-label">${dayLabel}</div>
       <div class="timeline-bar">`;
-    
+
     // Add event dots
     dayEvents.forEach(event => {
       const position = (event.timeMinutes / 1440) * 100; // 1440 = minutes in a day
       const eventClass = event.value ? 'on' : 'off';
       const time = formatTime(event.hourOfDay, event.minuteOfHour);
-      const status = event.value ? 'ON' : 'OFF';
+      const status = event.value ? __('settings.statusOn') : __('settings.statusOff');
       html += `<div class="timeline-event ${eventClass}" 
                     style="left: ${position}%"
                     title="${time} - ${status}"></div>`;
     });
-    
+
     html += `</div></div>`;
   });
 
@@ -131,7 +138,7 @@ function renderDeviceTimeline(events) {
     </div>
   `;
   html += '</div>';
-  
+
   return html;
 }
 
@@ -144,14 +151,14 @@ function renderRecentEvents(events) {
   // Take last 10 events (already sorted newest first from API)
   const recentEvents = events.slice(0, 10);
 
-  let html = '<div class="event-list"><h3>📋 Recent Events</h3>';
-  
+  let html = `<div class="events-section"><h3 class="events-subtitle">${__('settings.recentEvents')}</h3>`;
+
   recentEvents.forEach(event => {
     const date = new Date(event.timestamp);
     const timeStr = formatDateTime(date);
     const iconClass = event.value ? 'on' : 'off';
-    const statusText = event.value ? 'ON' : 'OFF';
-    
+    const statusText = event.value ? __('settings.statusOn') : __('settings.statusOff');
+
     html += `
       <div class="event-item">
         <div class="event-icon ${iconClass}">${event.value ? '●' : '○'}</div>
@@ -160,7 +167,7 @@ function renderRecentEvents(events) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   return html;
 }
@@ -176,7 +183,7 @@ function toggleDeviceCard(deviceId, event) {
 
   const card = document.getElementById('card-' + deviceId);
   const details = document.getElementById('details-' + deviceId);
-  
+
   if (expandedDevices.has(deviceId)) {
     expandedDevices.delete(deviceId);
     card.classList.remove('expanded');
@@ -193,15 +200,15 @@ function toggleDeviceCard(deviceId, event) {
  */
 function toggleDeviceMenu(event, deviceId) {
   event.stopPropagation();
-  
+
   const menu = document.getElementById('menu-' + deviceId);
   const isVisible = menu.classList.contains('show');
-  
+
   // Close all other menus
   document.querySelectorAll('.dropdown-menu').forEach(m => {
     m.classList.remove('show');
   });
-  
+
   // Toggle this menu
   if (!isVisible) {
     menu.classList.add('show');
@@ -224,32 +231,31 @@ async function viewDeviceEvents(deviceId, deviceName) {
   try {
     const eventsData = await Homey.api('GET', '/events');
     const deviceEvents = eventsData.events.filter(e => e.deviceId === deviceId);
-    
-    let html = `<p style="color: #666; margin-bottom: 15px;">Showing all ${deviceEvents.length} events for ${deviceName}</p>`;
-    
+
+    let html = `<p style="color: #666; margin-bottom: 15px;">${__('settings.showingAllEvents', { count: deviceEvents.length, name: deviceName })}</p>`;
+
     if (deviceEvents.length === 0) {
-      html += '<p class="text-muted">No events recorded yet</p>';
+      html += `<p class="text-muted">${__('settings.noEventsRecorded')}</p>`;
     } else {
       html += '<table class="events-table">';
       html += `
         <thead>
           <tr>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Day</th>
+            <th>${__('settings.time')}</th>
+            <th>${__('settings.status')}</th>
+            <th>${__('settings.day')}</th>
           </tr>
         </thead>
         <tbody>
       `;
-      
+
       deviceEvents.forEach(event => {
         const date = new Date(event.timestamp);
         const timeStr = formatDateTime(date);
         const statusColor = event.value ? '#4CAF50' : '#f44336';
-        const statusText = event.value ? '🟢 ON' : '🔴 OFF';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const dayName = days[event.dayOfWeek];
-        
+        const statusText = event.value ? '🟢 ' + __('settings.statusOn') : '🔴 ' + __('settings.statusOff');
+        const dayName = getDayAbbr(event.dayOfWeek);
+
         html += `
           <tr>
             <td>${timeStr}</td>
@@ -258,15 +264,15 @@ async function viewDeviceEvents(deviceId, deviceName) {
           </tr>
         `;
       });
-      
+
       html += '</tbody></table>';
     }
-    
-    document.getElementById('eventsModalTitle').textContent = `Events: ${deviceName}`;
+
+    document.getElementById('eventsModalTitle').textContent = `${__('settings.allEventsTitle')}: ${deviceName}`;
     document.getElementById('eventsModalContent').innerHTML = html;
     document.getElementById('eventsModal').classList.add('active');
   } catch (error) {
-    showStatus('Failed to load events: ' + error.message, 'error');
+    showStatus(__('settings.failedToLoadEvents') + ': ' + error.message, 'error');
   }
 }
 
@@ -282,8 +288,8 @@ function closeEventsModal() {
  */
 async function clearDeviceHistory(deviceId, deviceName) {
   const confirmed = await showConfirmModal(
-    'Clear History',
-    `Delete all recorded events for "${deviceName}"?\n\nThis cannot be undone, but tracking will continue.`
+    __('settings.clearHistoryTitle'),
+    __('settings.clearHistoryMessage', { name: deviceName })
   );
 
   if (!confirmed) return;
@@ -291,17 +297,17 @@ async function clearDeviceHistory(deviceId, deviceName) {
   try {
     // Get current history
     const history = await Homey.get('deviceHistory');
-    
+
     // Remove this device's history
     if (history && history[deviceId]) {
       delete history[deviceId];
       await Homey.set('deviceHistory', history);
     }
 
-    showStatus('History cleared for ' + deviceName, 'success');
+    showStatus(__('settings.historyCleared', { name: deviceName }), 'success');
     await loadTrackedDevices();
   } catch (error) {
-    showStatus('Failed to clear history: ' + error.message, 'error');
+    showStatus(__('settings.failedToClear') + ': ' + error.message, 'error');
   }
 }
 
@@ -315,20 +321,20 @@ async function removeDeviceById(deviceId) {
     const deviceName = device ? device.name : deviceId;
 
     const confirmed = await showConfirmModal(
-      'Remove Device',
-      `Remove "${deviceName}" from tracking?\n\nHistory will be preserved unless you clear it separately.`
+      __('settings.removeDeviceTitle'),
+      __('settings.removeDeviceMessage', { name: deviceName })
     );
 
     if (!confirmed) return;
 
     await Homey.api('POST', '/untrack', { deviceId });
-    showStatus('Device removed', 'success');
-    
+    showStatus(__('settings.deviceRemoved'), 'success');
+
     // Reload both lists
     await loadDevices();
     await loadTrackedDevices();
   } catch (error) {
-    showStatus('Failed to remove device: ' + error.message, 'error');
+    showStatus(__('settings.failedToRemove') + ': ' + error.message, 'error');
   }
 }
 
@@ -337,22 +343,19 @@ async function removeDeviceById(deviceId) {
  */
 async function generateTestDataForDevice(deviceId, deviceName) {
   const confirmed = await showConfirmModal(
-    'Generate Test Data',
-    `Generate realistic test data for "${deviceName}"?\n\nThis will create on/off events for the past 7 days.`
+    __('settings.generateTestDataTitle'),
+    __('settings.generateTestDataSingleMessage', { name: deviceName })
   );
 
   if (!confirmed) return;
 
   try {
     const result = await Homey.api('POST', '/generate-test-data', { deviceId });
-    
-    showStatus(
-      `✓ Generated ${result.eventsGenerated} events for ${deviceName}`, 
-      'success'
-    );
-    
+
+    showStatus(__('settings.testDataGeneratedSingle', { events: result.eventsGenerated, name: deviceName }), 'success');
+
     await loadTrackedDevices();
   } catch (error) {
-    showStatus('Failed to generate test data: ' + error.message, 'error');
+    showStatus(__('settings.failedToGenerate') + ': ' + error.message, 'error');
   }
 }

@@ -11,32 +11,32 @@ async function viewAllEventsDebug() {
     const response = await Homey.api('GET', '/events');
     const events = response.events || [];
     
-    let html = '<h3>All Events (Debug)</h3>';
-    html += `<p>Total events: ${events.length}</p>`;
+    let html = `<h3>${__('settings.allEventsTitle')} (Debug)</h3>`;
+    html += `<p>${__('settings.totalEvents')}: ${events.length}</p>`;
     
     if (events.length === 0) {
-      html += '<p class="text-muted">No events recorded</p>';
+      html += `<p class="text-muted">${__('settings.noEventsRecordedDebug')}</p>`;
     } else {
       html += '<table style="width:100%; font-size:11px; border-collapse:collapse;">';
       html += `
         <tr style="background:#f0f0f0;">
-          <th style="padding:5px; text-align:left;">Time</th>
-          <th style="padding:5px; text-align:left;">Device</th>
-          <th style="padding:5px; text-align:left;">Status</th>
-          <th style="padding:5px; text-align:left;">Day</th>
+          <th style="padding:5px; text-align:left;">${__('settings.time')}</th>
+          <th style="padding:5px; text-align:left;">${__('settings.device')}</th>
+          <th style="padding:5px; text-align:left;">${__('settings.status')}</th>
+          <th style="padding:5px; text-align:left;">${__('settings.day')}</th>
         </tr>
       `;
       
       events.slice(0, 100).forEach(event => {
         const date = new Date(event.timestamp);
-        const status = event.value ? '🟢 ON' : '🔴 OFF';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const status = event.value ? '🟢 ' + __('settings.statusOn') : '🔴 ' + __('settings.statusOff');
+        const dayName = getDayAbbr(event.dayOfWeek);
         html += `
           <tr style="border-bottom:1px solid #eee;">
             <td style="padding:5px;">${formatDateTime(date)}</td>
             <td style="padding:5px;">${escapeHtml(event.deviceName)}</td>
             <td style="padding:5px;">${status}</td>
-            <td style="padding:5px;">${days[event.dayOfWeek]}</td>
+            <td style="padding:5px;">${dayName}</td>
           </tr>
         `;
       });
@@ -44,7 +44,7 @@ async function viewAllEventsDebug() {
       html += '</table>';
       
       if (events.length > 100) {
-        html += `<p style="margin-top:10px; color:#999;">Showing first 100 of ${events.length} events</p>`;
+        html += `<p style="margin-top:10px; color:#999;">${__('settings.showingFirst', { shown: 100, total: events.length })}</p>`;
       }
     }
     
@@ -82,9 +82,9 @@ async function exportData() {
     a.click();
     URL.revokeObjectURL(url);
     
-    showStatus('Data exported successfully', 'success');
+    showStatus(__('settings.dataExported'), 'success');
   } catch (error) {
-    showStatus('Failed to export data: ' + error.message, 'error');
+    showStatus(__('settings.failedToExport') + ': ' + error.message, 'error');
   }
 }
 
@@ -99,7 +99,7 @@ async function viewLogs() {
     const logs = response.logs || [];
 
     if (logs.length === 0) {
-      logViewer.innerHTML = '<div style="color: #999;">No logs available</div>';
+      logViewer.innerHTML = `<div style="color: #999;">${__('settings.noLogsAvailable')}</div>`;
     } else {
       let html = '';
       // Show newest logs first
@@ -117,7 +117,7 @@ async function viewLogs() {
     logViewer.scrollTop = 0;
 
   } catch (error) {
-    showStatus('Failed to load logs: ' + error.message, 'error');
+    showStatus(__('settings.failedToLoadLogs') + ': ' + error.message, 'error');
   }
 }
 
@@ -132,12 +132,12 @@ function toggleAutoRefresh() {
   const btn = document.getElementById('autoRefreshBtn');
 
   if (autoRefreshEnabled) {
-    btn.textContent = 'Disable Auto-refresh';
+    btn.textContent = __('settings.disableAutoRefresh');
     btn.classList.remove('secondary');
     viewLogs();
     autoRefreshInterval = setInterval(viewLogs, 3000);
   } else {
-    btn.textContent = 'Enable Auto-refresh';
+    btn.textContent = __('settings.enableAutoRefresh');
     btn.classList.add('secondary');
     if (autoRefreshInterval) {
       clearInterval(autoRefreshInterval);
@@ -151,7 +151,7 @@ function toggleAutoRefresh() {
  */
 function clearLogDisplay() {
   const logViewer = document.getElementById('logViewer');
-  logViewer.innerHTML = '<div style="color: #999;">Log display cleared (logs still stored in app)</div>';
+  logViewer.innerHTML = `<div style="color: #999;">${__('settings.logDisplayCleared')}</div>`;
 }
 
 /**
@@ -167,8 +167,8 @@ async function copyLogs() {
     }).join('\n');
 
     await navigator.clipboard.writeText(text);
-    showStatus('Logs copied to clipboard!', 'success');
+    showStatus(__('settings.logsCopied'), 'success');
   } catch (error) {
-    showStatus('Failed to copy logs: ' + error.message, 'error');
+    showStatus(__('settings.failedToCopyLogs') + ': ' + error.message, 'error');
   }
 }

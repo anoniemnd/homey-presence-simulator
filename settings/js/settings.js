@@ -28,11 +28,11 @@ async function toggleVacationMode() {
     await Homey.api('POST', '/reload-settings');
 
     updateVacationStatus(newState);
-    showStatus(`Simulator ${newState ? 'enabled' : 'disabled'}`, 'success');
+    showStatus(__('settings.' + (newState ? 'simulatorEnabled' : 'simulatorDisabled')), 'success');
   } catch (error) {
     // Revert checkbox on error
     checkbox.checked = !checkbox.checked;
-    showStatus('Failed to toggle simulator: ' + error.message, 'error');
+    showStatus(__('settings.failedToToggle') + ': ' + error.message, 'error');
   }
 }
 
@@ -42,6 +42,14 @@ async function toggleVacationMode() {
  */
 function updateVacationStatus(isActive) {
   const statusElement = document.getElementById('vacationStatus');
-  statusElement.textContent = isActive ? 'ON' : 'OFF';
+  statusElement.textContent = __('settings.' + (isActive ? 'statusOn' : 'statusOff'));
   statusElement.style.color = isActive ? '#4CAF50' : '#f44336';
+  
+  // Update label text to ensure translation is applied
+  const statusTextSpan = document.querySelector('.status-text');
+  if (statusTextSpan) {
+    statusTextSpan.innerHTML = `${__('settings.simulatorIs')} <span id="vacationStatus">${__('settings.' + (isActive ? 'statusOn' : 'statusOff'))}</span>`;
+    // Reapply color after innerHTML update
+    document.getElementById('vacationStatus').style.color = isActive ? '#4CAF50' : '#f44336';
+  }
 }

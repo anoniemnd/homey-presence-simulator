@@ -1,6 +1,9 @@
 {
-    "title": {
-      "en": "Precense simulator is !{{disabled|enabled}}",
-      "nl": "Aanwezigheids simulator is !{{uitgeschakeld|ingeschakeld}}"
-    }
+  "id": "precense_simulator_is_enabled",
+  "type": "condition",
+  "invertible": true,
+  "title": {
+    "nl": "Aanwezigheids simulator is !{{ingeschakeld|uitgeschakeld}}",
+    "en": "Presence simulator is !{{enabled|disabled}}"
   }
+}

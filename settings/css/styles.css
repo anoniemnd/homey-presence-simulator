@@ -230,11 +230,11 @@ button.small {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #00A0D2;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(26px);
 }
 
@@ -336,7 +336,7 @@ input:checked + .slider:before {
   border: 1px solid #ddd;
   border-radius: 6px;
   margin-bottom: 12px;
-  overflow: hidden;
+  overflow: visible;
   transition: box-shadow 0.3s;
 }
 
@@ -378,6 +378,7 @@ input:checked + .slider:before {
   display: flex;
   gap: 8px;
   align-items: center;
+  position: relative;
 }
 
 .menu-btn {
@@ -442,8 +443,18 @@ input:checked + .slider:before {
    TIMELINE VISUALIZATION
    ======================================== */
 
-.timeline-section {
+/* .timeline-section {
   margin: 15px 0;
+} */
+
+.events-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  /* color: var(--accent-blue, #3b82f6); of dezelfde kleur als in je andere cards */
+  color: #00A0D2
 }
 
 .timeline-day {
@@ -510,6 +521,24 @@ input:checked + .slider:before {
   text-align: center;
   color: #999;
   font-size: 14px;
+}
+
+.events-section-divider {
+  border: none;
+  border-top: 8px solid #00A0D2;
+  /* zelfde grijs/blauwachtig als elders */
+  border-radius: 5px;
+  margin: 0.75rem 0 0.75rem 0;
+}
+
+.events-section {
+  padding: 0.5rem 0;
+}
+
+.events-section+.events-section {
+  border-top: 1px dashed rgba(148, 163, 184, 0.4);
+  /* subtieler dan een volle hr */
+  margin-top: 0.5rem;
 }
 
 /* ========================================

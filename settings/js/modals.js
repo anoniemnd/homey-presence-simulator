@@ -19,6 +19,12 @@ function showConfirmModal(title, message) {
     modalResolve = resolve;
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalMessage').textContent = message;
+    
+    // Update button text
+    const buttons = document.querySelectorAll('#confirmModal button');
+    if (buttons[0]) buttons[0].textContent = __('settings.cancel');
+    if (buttons[1]) buttons[1].textContent = __('settings.confirm');
+    
     document.getElementById('confirmModal').classList.add('active');
   });
 }

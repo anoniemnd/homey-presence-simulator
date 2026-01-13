@@ -10,7 +10,7 @@
 
 <body>
 
-  <h1>Presence Simulator Settings</h1>
+  <h1 data-i18n="settings.pageTitle">Presence Simulator Settings</h1>
 
   <div id="statusMessage" class="status"></div>
 
@@ -20,8 +20,8 @@
       <div class="modal-title" id="modalTitle">Confirm</div>
       <div class="modal-message" id="modalMessage"></div>
       <div class="modal-buttons">
-        <button class="secondary" onclick="closeModal(false)">Cancel</button>
-        <button onclick="closeModal(true)">Confirm</button>
+        <button class="secondary" onclick="closeModal(false)" data-i18n="settings.cancel">Cancel</button>
+        <button onclick="closeModal(true)" data-i18n="settings.confirm">Confirm</button>
       </div>
     </div>
   </div>
@@ -29,18 +29,18 @@
   <!-- All Events Modal -->
   <div id="eventsModal" class="modal-overlay">
     <div class="modal-content modal-large">
-      <div class="modal-title" id="eventsModalTitle">All Events</div>
+      <div class="modal-title" id="eventsModalTitle" data-i18n="settings.allEventsTitle">All Events</div>
       <div id="eventsModalContent" class="events-modal-content"></div>
       <div class="modal-buttons">
-        <button onclick="closeEventsModal()">Close</button>
+        <button onclick="closeEventsModal()" data-i18n="settings.close">Close</button>
       </div>
     </div>
   </div>
 
   <!-- Vacation Mode Toggle -->
   <div class="card">
-    <h2>🎯 Presence Simulator</h2>
-    <div class="info-box">
+    <h2 data-i18n="settings.presenceSimulator">Presence Simulator</h2>
+    <div class="info-box" data-i18n="settings.infoSimulator">
       Enable Presence Simulator to start replaying recorded patterns
     </div>
     <label class="toggle-label">
@@ -48,63 +48,66 @@
         <input type="checkbox" id="vacationMode" onchange="toggleVacationMode()">
         <span class="slider"></span>
       </label>
-      <span class="status-text">Simulator is <span id="vacationStatus">OFF</span></span>
+      <span class="status-text"><span data-i18n="settings.simulatorIs">Simulator is</span> <span id="vacationStatus">OFF</span></span>
     </label>
   </div>
 
   <!-- Add Devices -->
   <div class="card">
-    <h2>➕ Add Devices to Track</h2>
-    <div class="info-box">
+    <h2 data-i18n="settings.addDevices">Add Devices to Track</h2>
+    <div class="info-box" data-i18n="settings.infoAddDevices">
       Select one or more devices to start tracking their on/off patterns
     </div>
     <div id="deviceSelectorList" class="device-selector-list"></div>
-    <button onclick="addSelectedDevices()">Add Selected Devices (<span id="selectedCount">0</span>)</button>
+    <button onclick="addSelectedDevices()"><span data-i18n="settings.addSelectedDevices">Add Selected Devices</span> (<span id="selectedCount">0</span>)</button>
   </div>
 
   <!-- Tracked Devices -->
   <div class="card">
-    <h2>📱 Tracked Devices</h2>
+    <h2 data-i18n="settings.trackedDevices">Tracked Devices</h2>
     <div id="trackedDevices" class="device-list">
-      <p class="text-muted">No devices tracked yet</p>
+      <p class="text-muted" data-i18n="settings.noDevicesTracked">No devices tracked yet</p>
     </div>
   </div>
 
   <!-- Debug Section -->
   <div id="debugSection" class="debug-section" style="display: none;">
     <div class="card">
-      <h2>🐛 Debug Tools</h2>
-      <div class="info-box">
+      <h2 data-i18n="settings.debugTools">Debug Tools</h2>
+      <div class="info-box" data-i18n="settings.infoDebugTools">
         Development tools for troubleshooting
       </div>
-      <button onclick="viewAllEventsDebug()">View All Events</button>
-      <button onclick="exportData()" class="secondary">Export Data</button>
+      <button onclick="viewAllEventsDebug()" data-i18n="settings.viewAllEvents">View All Events</button>
+      <button onclick="exportData()" class="secondary" data-i18n="settings.exportData">Export Data</button>
       <div id="debugOutput" style="margin-top: 15px;"></div>
     </div>
 
     <div class="card">
-      <h2>📝 Application Logs</h2>
-      <div class="info-box">
+      <h2 data-i18n="settings.applicationLogs">Application Logs</h2>
+      <div class="info-box" data-i18n="settings.infoLogs">
         View real-time application logs for debugging
       </div>
       <div class="log-controls">
-        <button onclick="viewLogs()">Refresh Logs</button>
-        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary">Enable Auto-refresh</button>
-        <button onclick="clearLogDisplay()" class="secondary">Clear Display</button>
-        <button onclick="copyLogs()" class="secondary">Copy Logs</button>
+        <button onclick="viewLogs()" data-i18n="settings.refreshLogs">Refresh Logs</button>
+        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="secondary" data-i18n="settings.enableAutoRefresh">Enable Auto-refresh</button>
+        <button onclick="clearLogDisplay()" class="secondary" data-i18n="settings.clearDisplay">Clear Display</button>
+        <button onclick="copyLogs()" class="secondary" data-i18n="settings.copyLogs">Copy Logs</button>
       </div>
       <div id="logViewer" class="log-viewer" style="display: none;"></div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts - LOAD IN ORDER -->
+  <!-- 1. Utilities first -->
   <script src="./js/utils.js"></script>
   <script src="./js/modals.js"></script>
+  <!-- 2. Then feature modules -->
   <script src="./js/settings.js"></script>
   <script src="./js/device-selector.js"></script>
   <script src="./js/tracked-devices.js"></script>
   <script src="./js/test-data.js"></script>
   <script src="./js/debug.js"></script>
+  <!-- 3. Finally app.js which initializes everything -->
   <script src="./js/app.js"></script>
 
 </body>

@@ -8,14 +8,14 @@
   ],
   "name": {
     "en": "Precense Simulator",
-    "nl": "Aanwezigheid Simulator"
+    "nl": "Aanwezigheidssimulator"
   },
   "description": {
     "en": "Simulate presence by replaying your lighting patterns",
     "nl": "Simuleer aanwezigheid door verlichtingspatronen te herhalen"
   },
   "category": [
-    "security"
+    "tools"
   ],
   "permissions": [
     "homey:manager:api"

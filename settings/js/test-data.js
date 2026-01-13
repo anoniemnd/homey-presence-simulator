@@ -8,13 +8,13 @@
  */
 async function generateTestDataForSelected() {
   if (selectedDeviceIds.size === 0) {
-    showStatus('Please select at least one device', 'error');
+    showStatus(__('settings.selectAtLeastOne'), 'error');
     return;
   }
 
   const confirmed = await showConfirmModal(
-    'Generate Test Data',
-    `Generate realistic test data for ${selectedDeviceIds.size} device(s)?\n\nThis will create on/off events for the past 7 days.`
+    __('settings.generateTestDataTitle'),
+    __('settings.generateTestDataMessage', { count: selectedDeviceIds.size })
   );
 
   if (!confirmed) return;
@@ -27,13 +27,10 @@ async function generateTestDataForSelected() {
       totalEvents += result.eventsGenerated;
     }
 
-    showStatus(
-      `✓ Generated ${totalEvents} events for ${selectedDeviceIds.size} device(s)`, 
-      'success'
-    );
+    showStatus(__('settings.testDataGenerated', { events: totalEvents, count: selectedDeviceIds.size }), 'success');
     
     await loadTrackedDevices();
   } catch (error) {
-    showStatus('Failed to generate test data: ' + error.message, 'error');
+    showStatus(__('settings.failedToGenerate') + ': ' + error.message, 'error');
   }
 }

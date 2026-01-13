@@ -36,7 +36,8 @@ function showStatus(message, type) {
  * @returns {string} Formatted date string
  */
 function formatDateTime(date) {
-  return date.toLocaleString('nl-NL', {
+  // Use browser locale
+  return date.toLocaleString(undefined, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -69,8 +70,18 @@ function formatRelativeTime(timestamp) {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
   
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  return 'just now';
+  if (days > 0) return __('settings.daysAgo', { count: days });
+  if (hours > 0) return __('settings.hoursAgo', { count: hours });
+  if (minutes > 0) return __('settings.minutesAgo', { count: minutes });
+  return __('settings.justNow');
+}
+
+/**
+ * Get day abbreviation
+ * @param {number} dayIndex - Day index (0 = Sunday)
+ * @returns {string} Translated day abbreviation
+ */
+function getDayAbbr(dayIndex) {
+  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return __('settings.' + days[dayIndex]);
 }
