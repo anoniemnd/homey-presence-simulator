@@ -55,17 +55,17 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 ### Device Selection
 Select which devices to track for presence simulation.
 
-![Device Selection](assets/screenshots/device-selector.png?raw=true)
+![Device Selection](./assets/screenshots/device-selector.png)
 
 ### Tracked Devices & Timeline
 View your tracked devices with their weekly on/off patterns visualized in a timeline.
 
-![Tracked Devices](assets/screenshots/tracked-devices.png?raw=true)
+![Tracked Devices](./assets/screenshots/tracked-devices.png)
 
 ### Event History
 Detailed view of all on/off events for each device.
 
-![Event History](assets/screenshots/events-modal.png?raw=true)
+![Event History](./assets/screenshots/events-modal.png)
 
 ---
 
