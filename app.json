@@ -8,12 +8,12 @@
     "local"
   ],
   "name": {
-    "en": "Precense Simulator",
+    "en": "Presence Simulator",
     "nl": "Aanwezigheidssimulator"
   },
   "description": {
-    "en": "Simulate presence by replaying your lighting patterns",
-    "nl": "Simuleer aanwezigheid door verlichtingspatronen te herhalen"
+    "en": "Simulate presence by automatically replaying your lighting patterns from a week ago",
+    "nl": "Simuleer aanwezigheid door verlichtingspatronen van een week geleden automatisch te herhalen"
   },
   "category": [
     "tools"
@@ -29,6 +29,10 @@
   "images": {
     "small": "assets/images/small.jpg",
     "large": "assets/images/large.jpg"
+  },
+  "source": "https://github.com/anoniemnd/homey-presence-simulator",
+  "bugs": {
+    "url": "https://github.com/anoniemnd/homey-presence-simulator/issues"
   },
   "api": {
     "getDevices": {

@@ -130,6 +130,7 @@ class VacationModeApp extends Homey.App {
             }
           }
           this.logInfo('Actions rescheduled after restart');
+          await this.logScheduledOverview();
         }, 2000);
       }
 
@@ -339,6 +340,7 @@ class VacationModeApp extends Homey.App {
       this.logInfo(`Recorded: ${deviceId} -> ${value} at ${timeStr} (day ${event.dayOfWeek})`);
     }
   }
+
   async enableVacationMode() {
     if (this.vacationModeActive) {
       this.logInfo('Vacation mode already enabled');
@@ -379,6 +381,8 @@ class VacationModeApp extends Homey.App {
     }
 
     this.logInfo('======================================');
+
+    await this.logScheduledOverview();
   }
 
   async disableVacationMode() {
@@ -517,6 +521,101 @@ class VacationModeApp extends Homey.App {
     }
 
     this.logInfo(`--- end scheduleNextAction ---`);
+  }
+
+  async logScheduledOverview() {
+    if (!this.vacationModeActive) {
+      this.logInfo('Vacation mode not active - no scheduled actions');
+      return;
+    }
+
+    const scheduledActions = [];
+
+    for (const [deviceId, timeout] of this.scheduledTimeouts.entries()) {
+      const tracked = this.trackedDevices.get(deviceId);
+      const deviceName = tracked ? tracked.name : deviceId;
+      const history = this.deviceHistory.get(deviceId);
+
+      if (!history || history.length === 0) continue;
+
+      const now = this.getCurrentDate();
+      const currentDayOfWeek = now.getDay();
+      const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+
+      let nextEvent = null;
+      let minDelay = Infinity;
+
+      if (this.testMode) {
+        const currentMinute = now.getMinutes();
+        for (const event of history) {
+          let delayMinutes;
+          if (event.minuteOfHour > currentMinute) {
+            delayMinutes = event.minuteOfHour - currentMinute;
+          } else {
+            delayMinutes = (60 - currentMinute) + event.minuteOfHour;
+          }
+          if (delayMinutes < minDelay && delayMinutes > 0) {
+            minDelay = delayMinutes;
+            nextEvent = event;
+          }
+        }
+      } else {
+        for (const event of history) {
+          let delayMinutes;
+          if (event.dayOfWeek === currentDayOfWeek) {
+            if (event.timeMinutes > currentTimeMinutes) {
+              delayMinutes = event.timeMinutes - currentTimeMinutes;
+            } else {
+              delayMinutes = (7 * 24 * 60) - currentTimeMinutes + event.timeMinutes;
+            }
+          } else {
+            let daysUntil = event.dayOfWeek - currentDayOfWeek;
+            if (daysUntil < 0) daysUntil += 7;
+            delayMinutes = (daysUntil * 24 * 60) - currentTimeMinutes + event.timeMinutes;
+          }
+          if (delayMinutes < minDelay && delayMinutes > 0) {
+            minDelay = delayMinutes;
+            nextEvent = event;
+          }
+        }
+      }
+
+      if (nextEvent && minDelay < Infinity) {
+        const executeTime = new Date(Date.now() + minDelay * 60 * 1000);
+        scheduledActions.push({
+          deviceName: deviceName,
+          value: nextEvent.value,
+          delayMinutes: Math.round(minDelay),
+          executeTime: this.formatDate(executeTime)
+        });
+      }
+    }
+
+    this.logInfo('════════════════════════════════════════════════════════════');
+
+    if (scheduledActions.length === 0) {
+      this.logInfo('⚠️  No actions scheduled - check device history');
+    } else {
+      scheduledActions.sort((a, b) => b.delayMinutes - a.delayMinutes);
+
+      scheduledActions.forEach((action, index) => {
+        const hours = Math.floor(action.delayMinutes / 60);
+        const minutes = action.delayMinutes % 60;
+        const timeStr = hours > 0 ? `${hours}u ${minutes}m` : `${minutes}m`;
+
+        this.logInfo('');
+        this.logInfo(`   → Over ${timeStr} (${action.delayMinutes} minuten)`);
+        this.logInfo(`   → ${action.value ? 'AAN' : 'UIT'} om ${action.executeTime}`);
+        this.logInfo(`${scheduledActions.length - index}. 💡 ${action.deviceName}`);
+      });
+
+      this.logInfo('');
+    }
+
+    this.logInfo('╚════════════════════════════════════════════════════════════╝');
+    this.logInfo('║           📅 SCHEDULED ACTIONS OVERVIEW                    ║');
+    this.logInfo('╔════════════════════════════════════════════════════════════╗');
+    this.logInfo('');
   }
 
   async executeAction(deviceId, value) {
