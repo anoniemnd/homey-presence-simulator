@@ -1,0 +1,3 @@
+Presence Simulator automatically replays your lighting patterns from exactly one week ago, simulating your presence at home. The app tracks when your lights turn on and off throughout the week, then replays these exact patterns when you enable simulation mode - turning lights on and off at the same times as one week prior.
+
+Perfect for vacations or when away from home, the app requires no manual configuration. Simply select your devices, let it track for a week, and enable simulation mode when needed. The visual timeline and event history help you review patterns before activating the simulation.

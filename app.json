@@ -83,29 +83,29 @@
   "flow": {
     "conditions": [
       {
-        "id": "precense_simulator_is_enabled",
+        "id": "presence_simulator_is_enabled",
         "type": "condition",
         "invertible": true,
         "title": {
-          "nl": "Aanwezigheids simulator is !{{ingeschakeld|uitgeschakeld}}",
-          "en": "Presence simulator is !{{enabled|disabled}}"
+          "nl": "Simulatie is !{{ingeschakeld|uitgeschakeld}}",
+          "en": "Simulation is !{{enabled|disabled}}"
         }
       }
     ],
     "actions": [
       {
         "title": {
-          "en": "Disable precense simulator",
-          "nl": "Schakel aanwezigheids simulator uit"
+          "en": "Disable simulation",
+          "nl": "Schakel simulatie uit"
         },
-        "id": "disable_precense_simulator"
+        "id": "disable_presence_simulator"
       },
       {
         "title": {
-          "en": "Enable precense simulator",
-          "nl": "Schakel aanwezigheids simulator in"
+          "en": "Enable simulation",
+          "nl": "Schakel simulatie in"
         },
-        "id": "enable_precense_simulator"
+        "id": "enable_presence_simulator"
       }
     ]
   }

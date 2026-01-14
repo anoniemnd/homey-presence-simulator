@@ -28,7 +28,6 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 - **💡 Smart Filtering** - Automatically filters to show only lights, sockets, and compatible groups
 - **👥 Group Support** - Track device groups and automatically handle individual devices
 - **📥 Import History** - Import up to 50 historical events from Homey Insights when adding devices
-- **🧪 Test Mode** - Hourly replay mode for testing (instead of weekly)
 
 ---
 
@@ -39,7 +38,9 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 1. Install the app from the Homey App Store
 2. Open the app settings page
 3. Select the devices you want to track
-4. Let the app run for at least a week to build up pattern history
+4. Build up pattern history:
+   - **Quick start**: Import existing history from Homey Insights (up to 50 events per device)
+   - **Automatic**: Let the app run for at least a week to record your natural patterns
 
 ### Usage
 
@@ -77,7 +78,6 @@ Detailed view of all on/off events for each device.
 - **Simulation Mode** - Toggle to enable/disable pattern replay
 - **Timeline View** - Visualize patterns per day of the week (Monday - Sunday)
 - **Event History** - View detailed on/off events with timestamps
-- **Debug Tools** - Advanced debugging options for troubleshooting
 
 ### Requirements
 

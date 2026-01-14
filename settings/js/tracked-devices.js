@@ -64,12 +64,12 @@ function renderDeviceCard(device, deviceId, eventCount, lastEventTime, events) {
             <div class="dropdown-item" onclick="viewDeviceHistoryRaw('${deviceId}', '${escapeHtml(device.name)}')">
               ${__('settings.viewHistoryRaw')}
             </div>
+                            `
+      : ''
+    }
             <div class="dropdown-item" onclick="importDeviceHistoryFromInsights('${deviceId}', '${escapeHtml(device.name)}')">
               ${__('settings.importFromInsights')}
             </div>
-                `
-      : ''
-    }
             <div class="dropdown-item" onclick="viewDeviceEvents('${deviceId}', '${escapeHtml(device.name)}')">
               ${__('settings.viewAllEventsMenu')}
             </div>

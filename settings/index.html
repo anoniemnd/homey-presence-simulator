@@ -10,8 +10,6 @@
 
 <body>
 
-  <h1 data-i18n="settings.pageTitle">Presence Simulator Settings</h1>
-
   <div id="statusMessage" class="status"></div>
 
   <!-- Confirm Modal -->
@@ -43,14 +41,14 @@
     <div class="info-box" data-i18n="settings.infoSimulator">
       Enable Presence Simulator to start replaying recorded patterns
     </div>
-    <label class="toggle-label">
+    <div class="toggle-label">
       <label class="switch">
         <input type="checkbox" id="vacationMode" onchange="toggleVacationMode()">
         <span class="slider"></span>
       </label>
       <span class="status-text"><span data-i18n="settings.simulatorIs">Simulator is</span> <span
           id="vacationStatus">OFF</span></span>
-    </label>
+    </div>
   </div>
 
   <!-- Add Devices -->
@@ -61,16 +59,12 @@
     </div>
     <div id="deviceSelectorList" class="device-selector-list"></div>
 
-
-    <!-- ✅ NIEUW: Import optie VAST bij de knop -->
-
-    <div class="import-history" style="display: flex; align-items: flex-start; gap: 10px;">
-      <input type="checkbox" id="importHistoryOnAdd" checked style="margin-top: 3px; width: auto; flex-shrink: 0;">
+    <div class="import-history">
+      <input type="checkbox" id="importHistoryOnAdd" checked>
       <div class="import-history-note">
         <strong data-i18n="settings.checkboxImport">Importeer laatste events bij toevoegen</strong><br>
         <div data-i18n="settings.checkboxImportNote">Haalt max. 50 recente aan/uit events op uit Homey Insights</div>
       </div>
-
     </div>
 
     <button onclick="addSelectedDevices()">

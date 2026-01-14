@@ -1,0 +1,9 @@
+{
+  "id": "presence_simulator_is_enabled",
+  "type": "condition",
+  "invertible": true,
+  "title": {
+    "nl": "Simulatie is !{{ingeschakeld|uitgeschakeld}}",
+    "en": "Simulation is !{{enabled|disabled}}"
+  }
+}

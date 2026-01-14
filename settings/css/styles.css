@@ -1,4 +1,31 @@
 /* ========================================
+   CSS VARIABLES
+   ======================================== */
+
+:root {
+  /* Colors */
+  --primary-color: #00A0D2;
+  --primary-hover: #0087b5;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --border-color: #ddd;
+  --background-light: #f5f5f5;
+  --background-white: #ffffff;
+  --success-color: #4CAF50;
+  --danger-color: #dc3545;
+  --info-bg: #e7f3ff;
+
+  /* Spacing System (4px base) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+}
+
+/* ========================================
    BASE STYLES
    ======================================== */
 
@@ -7,23 +34,23 @@ body {
   padding: 20px;
   max-width: 900px;
   margin: 0 auto;
-  background: #f5f5f5;
+  background: var(--background-light);
 }
 
 h1 {
-  color: #333;
+  color: var(--text-primary);
   margin-top: 0;
 }
 
 h2 {
-  color: #00A0D2;
+  color: var(--primary-color);
   font-size: 18px;
   margin-top: 0;
 }
 
 h3 {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   margin: 15px 0 10px 0;
   font-weight: 600;
 }
@@ -40,7 +67,7 @@ label {
    ======================================== */
 
 .text-muted {
-  color: #999;
+  color: var(--text-muted);
 }
 
 .text-center {
@@ -52,7 +79,7 @@ label {
    ======================================== */
 
 .card {
-  background: white;
+  background: var(--background-white);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
@@ -60,8 +87,8 @@ label {
 }
 
 .info-box {
-  background: #e7f3ff;
-  border-left: 4px solid #00A0D2;
+  background: var(--info-bg);
+  border-left: 4px solid var(--primary-color);
   padding: 12px;
   margin-bottom: 15px;
   font-size: 14px;
@@ -69,12 +96,21 @@ label {
 }
 
 .import-history {
-  background: #e7f3ff;
-  /* border-left: 4px solid #00A0D2; */
+  background: var(--info-bg);
   padding: 12px;
   margin-bottom: 15px;
-  font-size: 16px;
+  font-size: 14px;
   border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.import-history input[type="checkbox"] {
+  margin-top: 3px;
+  width: auto;
+  flex-shrink: 0;
+  margin-bottom: 0;
 }
 
 .import-history-note {
@@ -89,7 +125,7 @@ select,
 input[type="checkbox"] {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 14px;
   margin-bottom: 15px;
@@ -105,7 +141,7 @@ input[type="checkbox"] {
    ======================================== */
 
 button {
-  background: #00A0D2;
+  background: var(--primary-color);
   color: white;
   padding: 12px 24px;
   border: none;
@@ -118,7 +154,7 @@ button {
 }
 
 button:hover {
-  background: #0087b5;
+  background: var(--primary-hover);
 }
 
 button.secondary {
@@ -138,7 +174,7 @@ button.success:hover {
 }
 
 button.danger {
-  background: #dc3545;
+  background: var(--danger-color);
 }
 
 button.danger:hover {
@@ -152,7 +188,7 @@ button.small {
 
 .icon-btn {
   background: none;
-  color: #666;
+  color: var(--text-secondary);
   padding: 8px;
   width: 36px;
   height: 36px;
@@ -162,7 +198,7 @@ button.small {
 
 .icon-btn:hover {
   background: #f0f0f0;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* ========================================
@@ -244,7 +280,7 @@ button.small {
 }
 
 input:checked+.slider {
-  background-color: #00A0D2;
+  background-color: var(--primary-color);
 }
 
 input:checked+.slider:before {
@@ -261,12 +297,11 @@ input:checked+.slider:before {
    ======================================== */
 
 .device-selector-list {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  max-height: 400px;
-  overflow-y: auto;
   margin-bottom: 15px;
-  background: white;
+  background: var(--background-white);
+  /* No max-height or overflow - let the list expand naturally and let the page scroll */
 }
 
 .zone-group {
@@ -278,7 +313,7 @@ input:checked+.slider:before {
 }
 
 .zone-header {
-  background: #00A0D2;
+  background: var(--primary-color);
   color: white;
   padding: 12px 15px;
   font-weight: 600;
@@ -292,7 +327,7 @@ input:checked+.slider:before {
 }
 
 .zone-header:hover {
-  background: #0087b5;
+  background: var(--primary-hover);
 }
 
 .zone-count {
@@ -304,8 +339,8 @@ input:checked+.slider:before {
 
 .zone-devices {
   display: block;
-  background: white;
-  border-bottom: 1px solid #ddd;
+  background: var(--background-white);
+  border-bottom: 1px solid var(--border-color);
   padding: 5px 0;
 }
 
@@ -334,7 +369,7 @@ input:checked+.slider:before {
   margin: 0;
   flex: 1;
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* ========================================
@@ -346,7 +381,7 @@ input:checked+.slider:before {
 }
 
 .device-card {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   margin-bottom: 12px;
   overflow: visible;
@@ -362,7 +397,7 @@ input:checked+.slider:before {
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  background: white;
+  background: var(--background-white);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -378,13 +413,13 @@ input:checked+.slider:before {
 .device-name {
   font-weight: 600;
   font-size: 16px;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .device-stats {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .device-actions {
@@ -402,8 +437,8 @@ input:checked+.slider:before {
   position: absolute;
   right: 0;
   top: 100%;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--background-white);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 100;
@@ -433,7 +468,7 @@ input:checked+.slider:before {
 }
 
 .dropdown-item.danger {
-  color: #dc3545;
+  color: var(--danger-color);
 }
 
 .dropdown-item.danger:hover {
@@ -456,18 +491,13 @@ input:checked+.slider:before {
    TIMELINE VISUALIZATION
    ======================================== */
 
-/* .timeline-section {
-  margin: 15px 0;
-} */
-
 .events-subtitle {
   font-size: 0.85rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  /* color: var(--accent-blue, #3b82f6); of dezelfde kleur als in je andere cards */
-  color: #00A0D2
+  color: var(--primary-color);
 }
 
 .timeline-day {
@@ -480,7 +510,7 @@ input:checked+.slider:before {
 .timeline-label {
   width: 45px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -512,7 +542,7 @@ input:checked+.slider:before {
 }
 
 .timeline-event.on {
-  background: #4CAF50;
+  background: var(--success-color);
 }
 
 .timeline-event.off {
@@ -523,7 +553,7 @@ input:checked+.slider:before {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #999;
+  color: var(--text-muted);
   margin-left: 45px;
   margin-top: 4px;
   padding: 0 4px;
@@ -532,14 +562,13 @@ input:checked+.slider:before {
 .no-events-message {
   padding: 15px;
   text-align: center;
-  color: #999;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .events-section-divider {
   border: none;
-  border-top: 8px solid #00A0D2;
-  /* zelfde grijs/blauwachtig als elders */
+  border-top: 8px solid var(--primary-color);
   border-radius: 5px;
   margin: 0.75rem 0 0.75rem 0;
 }
@@ -550,7 +579,6 @@ input:checked+.slider:before {
 
 .events-section+.events-section {
   border-top: 1px dashed rgba(148, 163, 184, 0.4);
-  /* subtieler dan een volle hr */
   margin-top: 0.5rem;
 }
 
@@ -566,7 +594,7 @@ input:checked+.slider:before {
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  background: white;
+  background: var(--background-white);
   border-radius: 4px;
   margin-bottom: 6px;
   font-size: 13px;
@@ -587,7 +615,7 @@ input:checked+.slider:before {
 }
 
 .event-icon.on {
-  background: #4CAF50;
+  background: var(--success-color);
 }
 
 .event-icon.off {
@@ -599,7 +627,7 @@ input:checked+.slider:before {
 }
 
 .event-time {
-  color: #999;
+  color: var(--text-muted);
   font-size: 12px;
   margin-left: auto;
   white-space: nowrap;
@@ -627,7 +655,7 @@ input:checked+.slider:before {
 }
 
 .modal-content {
-  background: white;
+  background: var(--background-white);
   border-radius: 8px;
   padding: 24px;
   max-width: 400px;
@@ -643,12 +671,12 @@ input:checked+.slider:before {
 .modal-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .modal-message {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 20px;
   line-height: 1.5;
   white-space: pre-line;
@@ -679,7 +707,7 @@ input:checked+.slider:before {
   padding: 10px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .events-table td {
@@ -699,7 +727,7 @@ input:checked+.slider:before {
   opacity: 0.7;
   margin-top: 40px;
   padding-top: 20px;
-  border-top: 2px dashed #ddd;
+  border-top: 2px dashed var(--border-color);
 }
 
 #debugOutput {

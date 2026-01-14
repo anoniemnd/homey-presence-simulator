@@ -118,9 +118,13 @@ class VacationModeApp extends Homey.App {
       this.logInfo(`Currently tracking ${this.trackedDevices.size} devices`);
 
       if (this.vacationModeActive) {
-        this.logInfo('Vacation mode was active, rescheduling actions after restart...');
+        this.logInfo('Vacation mode was active, syncing initial states and rescheduling actions after restart...');
 
         await this.homey.setTimeout(async () => {
+          // First sync initial states
+          await this.syncInitialStates();
+
+          // Then reschedule future actions
           for (const [deviceId, history] of this.deviceHistory.entries()) {
             if (this.trackedDevices.has(deviceId)) {
               this.logInfo(`Rescheduling for device: ${deviceId}`);
@@ -158,17 +162,17 @@ class VacationModeApp extends Homey.App {
 
   registerFlowCards() {
     try {
-      this.homey.flow.getActionCard('enable_precense_simulator')
+      this.homey.flow.getActionCard('enable_presence_simulator')
         .registerRunListener(async () => {
           await this.enableVacationMode();
         });
 
-      this.homey.flow.getActionCard('disable_precense_simulator')
+      this.homey.flow.getActionCard('disable_presence_simulator')
         .registerRunListener(async () => {
           await this.disableVacationMode();
         });
 
-      this.homey.flow.getConditionCard('precense_simulator_is_enabled')
+      this.homey.flow.getConditionCard('presence_simulator_is_enabled')
         .registerRunListener(async () => {
           return this.vacationModeActive;
         });
@@ -318,7 +322,8 @@ class VacationModeApp extends Homey.App {
     let history = this.deviceHistory.get(deviceId) || [];
     history.push(event);
 
-    const keepDuration = 7 * 24 * 60 * 60 * 1000;
+    // Keep 8 days of history to ensure we always have the previous week's event
+    const keepDuration = 8 * 24 * 60 * 60 * 1000;
     const cutoffTime = Date.now() - keepDuration;
     history = history.filter(e => e.timestamp > cutoffTime);
 
@@ -367,6 +372,9 @@ class VacationModeApp extends Homey.App {
     } catch (err) {
       this.logInfo('No vacation_mode_enabled trigger card');
     }
+
+    // Sync initial states before scheduling future actions
+    await this.syncInitialStates();
 
     for (const [deviceId, history] of this.deviceHistory.entries()) {
       this.logInfo(`Scheduling actions for device: ${deviceId}`);
@@ -613,11 +621,83 @@ class VacationModeApp extends Homey.App {
     }
   }
 
+  /**
+   * Sync initial device states based on history from 1 week (or 1 hour in test mode) ago
+   * This ensures devices are in the correct state immediately when the simulator starts
+   */
+  async syncInitialStates() {
+    this.logInfo('=== Syncing initial device states ===');
+
+    const now = this.getCurrentDate();
+    let targetTime;
+
+    if (this.testMode) {
+      // In test mode, look back 1 hour
+      targetTime = new Date(now.getTime() - (60 * 60 * 1000));
+      this.logInfo(`TEST MODE: Looking for states from 1 hour ago (${this.formatDate(targetTime)})`);
+    } else {
+      // In normal mode, look back exactly 7 days
+      targetTime = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      this.logInfo(`NORMAL MODE: Looking for states from 7 days ago (${this.formatDate(targetTime)})`);
+    }
+
+    for (const [deviceId, history] of this.deviceHistory.entries()) {
+      if (!this.trackedDevices.has(deviceId)) {
+        this.logInfo(`Skipping ${deviceId} - not tracked`);
+        continue;
+      }
+
+      const tracked = this.trackedDevices.get(deviceId);
+
+      if (!history || history.length === 0) {
+        this.logInfo(`No history for ${tracked.name}, skipping initial sync`);
+        continue;
+      }
+
+      // Find the last event before or at the target time
+      let lastEventBeforeTarget = null;
+
+      for (const event of history) {
+        if (event.timestamp <= targetTime.getTime()) {
+          lastEventBeforeTarget = event;
+        } else {
+          break; // Events are sorted by time, so we can stop here
+        }
+      }
+
+      if (lastEventBeforeTarget) {
+        const eventDate = new Date(lastEventBeforeTarget.timestamp);
+        this.logInfo(`Found state for ${tracked.name}: ${lastEventBeforeTarget.value} at ${this.formatDate(eventDate)}`);
+
+        try {
+          const { HomeyAPI } = require('homey-api');
+          const api = await HomeyAPI.createAppAPI({ homey: this.homey });
+          const device = await api.devices.getDevice({ id: deviceId });
+          const currentState = device.capabilitiesObj.onoff.value;
+
+          if (currentState !== lastEventBeforeTarget.value) {
+            await device.setCapabilityValue('onoff', lastEventBeforeTarget.value);
+            this.logInfo(`✓ Synced ${tracked.name}: ${currentState} -> ${lastEventBeforeTarget.value}`);
+          } else {
+            this.logInfo(`✓ ${tracked.name} already in correct state (${currentState})`);
+          }
+        } catch (error) {
+          this.logError(`Failed to sync ${tracked.name}: ${error.message}`);
+        }
+      } else {
+        this.logInfo(`No historical state found for ${tracked.name} at target time`);
+      }
+    }
+
+    this.logInfo('=== Initial state sync completed ===');
+  }
+
   startCleanupTimer() {
     this.homey.setInterval(async () => {
       this.logInfo('Running daily cleanup...');
 
-      const cutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      // Keep 8 days of history
+      const cutoffTime = Date.now() - (8 * 24 * 60 * 60 * 1000);
 
       for (const [deviceId, history] of this.deviceHistory.entries()) {
         const filtered = history.filter(e => {
