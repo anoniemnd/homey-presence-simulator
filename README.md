@@ -58,8 +58,12 @@ Select which devices to track for presence simulation.
 
 ![Device Selection](./assets/screenshots/device-selector.png)
 
-### Tracked Devices & Timeline
-View your tracked devices with their weekly on/off patterns visualized in a timeline.
+### Tracked Devices
+View your tracked devices. Via the menu you can: 
+- Import Insights (if you didn't while adding the device)
+- View events (you can also click on the tracked device to do that)
+- Remove history
+- Remove the device (stop tracking and simulating)
 
 ![Tracked Devices](./assets/screenshots/tracked-devices.png)
 
