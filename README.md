@@ -82,7 +82,7 @@ Detailed view of all on/off events for each device.
 ### Requirements
 
 - Homey (Pro) firmware >= 5.0.0
-- At least one compatible light or socket device
+- At least one compatible light, socket or switch device
 - Minimum one week of tracking data for accurate simulation (or use Import feature)
 
 ---
@@ -95,7 +95,7 @@ Detailed view of all on/off events for each device.
 3. Data is stored locally on your Homey
 
 ### Simulation Phase
-1. When simulation mode is enabled, the app calculates what happened exactly one week ago
+1. When simulation mode is enabled, tracked lights will be set to the same state exactly one week ago.
 2. It schedules the same actions for today (e.g., if the device turned on last Monday at 19:30, it will turn on this Monday at 19:30)
 3. The simulation runs continuously until you disable it
 
@@ -122,18 +122,6 @@ Detailed view of all on/off events for each device.
 - Ensure the device supports on/off capability
 - Verify the device is online and working normally in Homey
 - If a device is part of a tracked group, it won't appear individually
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! If you have suggestions, bug reports, or want to contribute code:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ---
 
