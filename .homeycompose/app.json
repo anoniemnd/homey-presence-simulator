@@ -29,6 +29,7 @@
     "small": "assets/images/small.jpg",
     "large": "assets/images/large.jpg"
   },
+  "homeyCommunityTopicId": 149356,
   "source": "https://github.com/anoniemnd/homey-presence-simulator",
   "bugs": {
     "url": "https://github.com/anoniemnd/homey-presence-simulator/issues"
