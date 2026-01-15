@@ -65,6 +65,7 @@ View your tracked devices with their weekly on/off patterns visualized in a time
 
 ### Event History
 Detailed view of all on/off events for each device.
+You can even click on a badge to view all events for that moment.
 
 ![Event History](./assets/screenshots/events-modal.png)
 
