@@ -7,7 +7,7 @@
     "debugTools": "Debug tools",
     "applicationLogs": "Application logs",
     "infoSimulator": "Enable Presence Simulator to start replaying recorded patterns",
-    "infoAddDevices": "Select one or more devices to start tracking their on/off patterns.<ul><li>Only lights, sockets, and groups containing lights/sockets are shown.</li><li>Devices already tracked are hidden.</li></ul>",
+    "infoAddDevices": "Select one or more devices to start tracking their on/off patterns.<ul><li>Only lights, sockets, switches, and groups containing lights/sockets/switches are shown.</li><li>Devices already tracked are hidden.</li></ul>",
     "infoDebugTools": "Development tools for troubleshooting",
     "infoLogs": "View real-time application logs for debugging",
     "simulatorIs": "Simulator is",
@@ -106,6 +106,8 @@
     "devicesAddedTitle": "Devices added successfully",
     "devicesAddedSuccess": "Successfully added __count__ device(s):",
     "importedEventsCount": "✓ Imported __count__ events from Homey Insights",
-    "checkTrackedDevices": "Check the 'Tracked devices' section below for details."
+    "checkTrackedDevices": "Check the 'Tracked devices' section below for details.",
+    "groupedEventsTitle": "Grouped events",
+    "showingGroupedEvents": "__count__ events in this group"
   }
 }

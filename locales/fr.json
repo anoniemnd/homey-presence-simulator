@@ -7,7 +7,7 @@
     "debugTools": "Outils de débogage",
     "applicationLogs": "Journaux d'application",
     "infoSimulator": "Activez le simulateur de présence pour commencer à rejouer les motifs enregistrés",
-    "infoAddDevices": "Sélectionnez un ou plusieurs appareils pour commencer à suivre leurs cycles marche/arrêt.<ul><li>Seules les lumières, prises et groupes contenant des lumières/prises sont affichés.</li><li>Les appareils déjà suivis sont masqués.</li></ul>",
+    "infoAddDevices": "Sélectionnez un ou plusieurs appareils pour commencer à suivre leurs cycles marche/arrêt.<ul><li>Seules les lumières, prises, interrupteurs et groupes contenant des lumières/prises/interrupteurs sont affichés.</li><li>Les appareils déjà suivis sont masqués.</li></ul>",
     "infoDebugTools": "Outils de développement pour le dépannage",
     "infoLogs": "Afficher les journaux d'application en temps réel pour le débogage",
     "simulatorIs": "Le simulateur est",

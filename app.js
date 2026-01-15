@@ -2,6 +2,10 @@
 
 const Homey = require('homey');
 
+// Development flags
+const DEBUG = false;   // Enable debug mode features
+const VERBOSE = false; // Enable verbose logging for troubleshooting
+
 class VacationModeApp extends Homey.App {
 
   async onInit() {
@@ -81,6 +85,17 @@ class VacationModeApp extends Homey.App {
       this.recentLogs.shift();
     }
     this.error(message);
+  }
+
+  // Verbose logging - only shown when VERBOSE flag is enabled
+  // Used for detailed debugging during development/troubleshooting
+  logVerbose(message) {
+    if (VERBOSE) {
+      this.logInfo(message);
+    } else {
+      // Still log to console for development, but not to UI
+      this.log(message);
+    }
   }
 
   async loadState() {
@@ -474,37 +489,37 @@ class VacationModeApp extends Homey.App {
   }
 
   async scheduleNextAction(deviceId, history) {
-    this.logInfo(`--- scheduleNextAction called for ${deviceId} ---`);
-    this.logInfo(`Vacation mode active: ${this.vacationModeActive}`);
-    this.logInfo(`Test mode: ${this.testMode}`);
-    this.logInfo(`History length: ${history ? history.length : 0}`);
+    this.logVerbose(`--- scheduleNextAction called for ${deviceId} ---`);
+    this.logVerbose(`Vacation mode active: ${this.vacationModeActive}`);
+    this.logVerbose(`Test mode: ${this.testMode}`);
+    this.logVerbose(`History length: ${history ? history.length : 0}`);
 
     if (!this.vacationModeActive) {
-      this.logInfo('Vacation mode not active, skipping schedule');
+      this.logVerbose('Vacation mode not active, skipping schedule');
       return;
     }
 
     if (!history || history.length === 0) {
-      this.logInfo(`No history for device ${deviceId}`);
+      this.logVerbose(`No history for device ${deviceId}`);
       return;
     }
 
     const now = this.getCurrentDate();
-    this.logInfo(`Current time: ${this.formatDate(now)}`);
-    this.logInfo(`Current minute: ${now.getMinutes()}`);
+    this.logVerbose(`Current time: ${this.formatDate(now)}`);
+    this.logVerbose(`Current minute: ${now.getMinutes()}`);
 
     // Log history for debugging
     if (this.testMode) {
-      this.logInfo(`TEST MODE - Looking for events to replay (current minute: ${now.getMinutes()})`);
+      this.logVerbose(`TEST MODE - Looking for events to replay (current minute: ${now.getMinutes()})`);
       history.forEach((event, index) => {
-        this.logInfo(`  Event ${index}: minute=${event.minuteOfHour}, value=${event.value}`);
+        this.logVerbose(`  Event ${index}: minute=${event.minuteOfHour}, value=${event.value}`);
       });
     } else {
       const currentDayOfWeek = now.getDay();
       const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-      this.logInfo(`NORMAL MODE - Current day: ${currentDayOfWeek}, time: ${currentTimeMinutes} mins`);
+      this.logVerbose(`NORMAL MODE - Current day: ${currentDayOfWeek}, time: ${currentTimeMinutes} mins`);
       history.forEach((event, index) => {
-        this.logInfo(`  Event ${index}: day=${event.dayOfWeek}, time=${event.timeMinutes} mins, value=${event.value}`);
+        this.logVerbose(`  Event ${index}: day=${event.dayOfWeek}, time=${event.timeMinutes} mins, value=${event.value}`);
       });
     }
 
@@ -517,11 +532,11 @@ class VacationModeApp extends Homey.App {
       const executeTime = new Date(Date.now() + delayMs);
 
       if (this.testMode) {
-        this.logInfo(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (at minute ${nextEvent.minuteOfHour})`);
-        this.logInfo(`  Will execute at: ${this.formatDate(executeTime)}`);
+        this.logVerbose(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (at minute ${nextEvent.minuteOfHour})`);
+        this.logVerbose(`  Will execute at: ${this.formatDate(executeTime)}`);
       } else {
-        this.logInfo(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (day ${nextEvent.dayOfWeek})`);
-        this.logInfo(`  Will execute at: ${this.formatDate(executeTime)}`);
+        this.logVerbose(`✓ SCHEDULED: ${deviceId} -> ${nextEvent.value} in ${Math.round(minDelay)} min (day ${nextEvent.dayOfWeek})`);
+        this.logVerbose(`  Will execute at: ${this.formatDate(executeTime)}`);
       }
 
       if (this.scheduledTimeouts.has(deviceId)) {
@@ -529,17 +544,17 @@ class VacationModeApp extends Homey.App {
       }
 
       const timeout = this.homey.setTimeout(async () => {
-        this.logInfo(`⏰ TIMEOUT TRIGGERED for ${deviceId}`);
+        this.logVerbose(`⏰ TIMEOUT TRIGGERED for ${deviceId}`);
         await this.executeAction(deviceId, nextEvent.value);
         await this.scheduleNextAction(deviceId, history);
       }, delayMs);
 
       this.scheduledTimeouts.set(deviceId, timeout);
     } else {
-      this.logInfo(`❌ No suitable event found for ${deviceId}`);
+      this.logVerbose(`❌ No suitable event found for ${deviceId}`);
     }
 
-    this.logInfo(`--- end scheduleNextAction ---`);
+    this.logVerbose(`--- end scheduleNextAction ---`);
   }
 
 
@@ -626,31 +641,32 @@ class VacationModeApp extends Homey.App {
    * This ensures devices are in the correct state immediately when the simulator starts
    */
   async syncInitialStates() {
-    this.logInfo('=== Syncing initial device states ===');
-
     const now = this.getCurrentDate();
     let targetTime;
 
     if (this.testMode) {
       // In test mode, look back 1 hour
       targetTime = new Date(now.getTime() - (60 * 60 * 1000));
-      this.logInfo(`TEST MODE: Looking for states from 1 hour ago (${this.formatDate(targetTime)})`);
     } else {
       // In normal mode, look back exactly 7 days
       targetTime = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-      this.logInfo(`NORMAL MODE: Looking for states from 7 days ago (${this.formatDate(targetTime)})`);
     }
+
+    const syncActions = [];
 
     for (const [deviceId, history] of this.deviceHistory.entries()) {
       if (!this.trackedDevices.has(deviceId)) {
-        this.logInfo(`Skipping ${deviceId} - not tracked`);
         continue;
       }
 
       const tracked = this.trackedDevices.get(deviceId);
 
       if (!history || history.length === 0) {
-        this.logInfo(`No history for ${tracked.name}, skipping initial sync`);
+        syncActions.push({
+          deviceName: tracked.name,
+          status: 'no_history',
+          message: 'No history available'
+        });
         continue;
       }
 
@@ -667,7 +683,6 @@ class VacationModeApp extends Homey.App {
 
       if (lastEventBeforeTarget) {
         const eventDate = new Date(lastEventBeforeTarget.timestamp);
-        this.logInfo(`Found state for ${tracked.name}: ${lastEventBeforeTarget.value} at ${this.formatDate(eventDate)}`);
 
         try {
           const { HomeyAPI } = require('homey-api');
@@ -677,19 +692,98 @@ class VacationModeApp extends Homey.App {
 
           if (currentState !== lastEventBeforeTarget.value) {
             await device.setCapabilityValue('onoff', lastEventBeforeTarget.value);
-            this.logInfo(`✓ Synced ${tracked.name}: ${currentState} -> ${lastEventBeforeTarget.value}`);
+            syncActions.push({
+              deviceName: tracked.name,
+              status: 'synced',
+              oldValue: currentState,
+              newValue: lastEventBeforeTarget.value,
+              eventTime: this.formatDate(eventDate)
+            });
           } else {
-            this.logInfo(`✓ ${tracked.name} already in correct state (${currentState})`);
+            syncActions.push({
+              deviceName: tracked.name,
+              status: 'already_correct',
+              value: currentState,
+              eventTime: this.formatDate(eventDate)
+            });
           }
         } catch (error) {
-          this.logError(`Failed to sync ${tracked.name}: ${error.message}`);
+          syncActions.push({
+            deviceName: tracked.name,
+            status: 'error',
+            error: error.message
+          });
         }
       } else {
-        this.logInfo(`No historical state found for ${tracked.name} at target time`);
+        syncActions.push({
+          deviceName: tracked.name,
+          status: 'no_historical_state',
+          message: 'No historical state at target time'
+        });
       }
     }
 
-    this.logInfo('=== Initial state sync completed ===');
+    // Log summary
+    this.logInfo('');
+    this.logInfo('╔════════════════════════════════════════════════════════════╗');
+    this.logInfo('║           🔄 INITIAL STATE SYNC SUMMARY                    ║');
+    this.logInfo('╚════════════════════════════════════════════════════════════╝');
+    this.logInfo('');
+
+    const targetTimeStr = this.formatDate(targetTime);
+    this.logInfo(`   Target time: ${targetTimeStr}`);
+    this.logInfo(`   Mode: ${this.testMode ? 'TEST (1 hour ago)' : 'NORMAL (7 days ago)'}`);
+    this.logInfo('');
+
+    if (syncActions.length === 0) {
+      this.logInfo('   ⚠️  No devices to sync');
+    } else {
+      // Group actions by status
+      const synced = syncActions.filter(a => a.status === 'synced');
+      const alreadyCorrect = syncActions.filter(a => a.status === 'already_correct');
+      const errors = syncActions.filter(a => a.status === 'error');
+      const noData = syncActions.filter(a => a.status === 'no_history' || a.status === 'no_historical_state');
+
+      // Show synced devices (changed state)
+      if (synced.length > 0) {
+        synced.forEach((action, index) => {
+          this.logInfo(`${synced.length - index}. 💡 ${action.deviceName}`);
+          this.logInfo(`   → Changed: ${action.oldValue ? 'AAN' : 'UIT'} → ${action.newValue ? 'AAN' : 'UIT'}`);
+          this.logInfo(`   → Based on event at ${action.eventTime}`);
+          this.logInfo('');
+        });
+      }
+
+      // Show already correct devices
+      if (alreadyCorrect.length > 0) {
+        alreadyCorrect.forEach((action, index) => {
+          this.logInfo(`${alreadyCorrect.length - index}. ✓ ${action.deviceName}`);
+          this.logInfo(`   → Already correct: ${action.value ? 'AAN' : 'UIT'}`);
+          this.logInfo(`   → Based on event at ${action.eventTime}`);
+          this.logInfo('');
+        });
+      }
+
+      // Show devices with no data
+      if (noData.length > 0) {
+        noData.forEach((action, index) => {
+          this.logInfo(`${noData.length - index}. ⚠️  ${action.deviceName}`);
+          this.logInfo(`   → ${action.message}`);
+          this.logInfo('');
+        });
+      }
+
+      // Show errors
+      if (errors.length > 0) {
+        errors.forEach((action, index) => {
+          this.logInfo(`${errors.length - index}. ❌ ${action.deviceName}`);
+          this.logInfo(`   → Error: ${action.error}`);
+          this.logInfo('');
+        });
+      }
+    }
+
+    this.logInfo('════════════════════════════════════════════════════════════');
   }
 
   startCleanupTimer() {

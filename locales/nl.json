@@ -7,7 +7,7 @@
     "debugTools": "Foutopsporingshulpmiddelen",
     "applicationLogs": "Applicatielogboek",
     "infoSimulator": "Schakel de Aanwezigheidssimulator in om opgenomen patronen af te spelen",
-    "infoAddDevices": "Selecteer één of meer apparaten om hun aan/uit patronen te volgen.<ul><li>Alleen lampen, stopcontacten en groepen met lampen/stopcontacten worden getoond.</li><li>Apparaten die al gevolgd worden zijn verborgen.</li></ul>",
+    "infoAddDevices": "Selecteer één of meer apparaten om hun aan/uit patronen te volgen.<ul><li>Alleen lampen, stopcontacten, schakelaars en groepen met lampen/stopcontacten/schakelaars worden getoond.</li><li>Apparaten die al gevolgd worden zijn verborgen.</li></ul>",
     "infoDebugTools": "Ontwikkelhulpmiddelen voor probleemoplossing",
     "infoLogs": "Bekijk realtime applicatielogboek voor foutopsporing",
     "simulatorIs": "Simulator is",
@@ -106,6 +106,8 @@
     "devicesAddedTitle": "Apparaten succesvol toegevoegd",
     "devicesAddedSuccess": "Succesvol __count__ apparaat/apparaten toegevoegd:",
     "importedEventsCount": "✓ __count__ gebeurtenissen geïmporteerd uit Homey Insights",
-    "checkTrackedDevices": "Bekijk de sectie 'Gevolgde apparaten' hieronder voor details."
+    "checkTrackedDevices": "Bekijk de sectie 'Gevolgde apparaten' hieronder voor details.",
+    "groupedEventsTitle": "Gegroepeerde gebeurtenissen",
+    "showingGroupedEvents": "__count__ gebeurtenissen in deze groep"
   }
 }

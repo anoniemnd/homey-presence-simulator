@@ -7,7 +7,7 @@
     "debugTools": "Debug-Tools",
     "applicationLogs": "Anwendungsprotokolle",
     "infoSimulator": "Aktivieren Sie den Anwesenheitssimulator, um aufgezeichnete Muster abzuspielen",
-    "infoAddDevices": "Wählen Sie ein oder mehrere Geräte aus, um ihre Ein-/Ausschaltmuster zu verfolgen.<ul><li>Nur Lampen, Steckdosen und Gruppen mit Lampen/Steckdosen werden angezeigt.</li><li>Bereits verfolgte Geräte werden ausgeblendet.</li></ul>",
+    "infoAddDevices": "Wählen Sie ein oder mehrere Geräte aus, um ihre Ein-/Ausschaltmuster zu verfolgen.<ul><li>Nur Lampen, Steckdosen, Schalter und Gruppen mit Lampen/Steckdosen/Schaltern werden angezeigt.</li><li>Bereits verfolgte Geräte werden ausgeblendet.</li></ul>",
     "infoDebugTools": "Entwicklungswerkzeuge zur Fehlerbehebung",
     "infoLogs": "Echtzeit-Anwendungsprotokolle zur Fehlersuche anzeigen",
     "simulatorIs": "Simulator ist",

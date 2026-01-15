@@ -91,6 +91,53 @@ function renderDeviceCard(device, deviceId, eventCount, lastEventTime, events) {
 }
 
 /**
+ * Group events that are close together in time
+ * @param {Array} events - Array of events for a single day
+ * @param {number} thresholdPercent - Percentage of day (0-100) within which to group events
+ * @returns {Array} Array of groups, each with {position, events}
+ */
+function groupCloseEvents(events, thresholdPercent) {
+  if (events.length === 0) return [];
+
+  // Sort events by time
+  const sortedEvents = [...events].sort((a, b) => a.timeMinutes - b.timeMinutes);
+
+  const groups = [];
+  const thresholdMinutes = (thresholdPercent / 100) * 1440; // 1440 minutes in a day
+
+  let currentGroup = {
+    events: [sortedEvents[0]],
+    position: sortedEvents[0].timeMinutes
+  };
+
+  for (let i = 1; i < sortedEvents.length; i++) {
+    const event = sortedEvents[i];
+    const timeDiff = event.timeMinutes - currentGroup.position;
+
+    if (timeDiff <= thresholdMinutes) {
+      // Add to current group
+      currentGroup.events.push(event);
+      // Update position to middle of group
+      currentGroup.position = Math.round(
+        currentGroup.events.reduce((sum, e) => sum + e.timeMinutes, 0) / currentGroup.events.length
+      );
+    } else {
+      // Start new group
+      groups.push(currentGroup);
+      currentGroup = {
+        events: [event],
+        position: event.timeMinutes
+      };
+    }
+  }
+
+  // Add last group
+  groups.push(currentGroup);
+
+  return groups;
+}
+
+/**
  * Render timeline visualization
  */
 function renderDeviceTimeline(events) {
@@ -98,11 +145,15 @@ function renderDeviceTimeline(events) {
     return `<div class="no-events-message">${__('settings.noEventsRecorded')}</div>`;
   }
 
+  // Filter events to only show last 7 days (not 8)
+  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const filteredEvents = events.filter(e => e.timestamp > sevenDaysAgo);
+
   // Group events by day of week
   const eventsByDay = {};
   const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-  events.forEach(event => {
+  filteredEvents.forEach(event => {
     const dayKey = days[event.dayOfWeek];
     if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
     eventsByDay[dayKey].push(event);
@@ -119,15 +170,41 @@ function renderDeviceTimeline(events) {
       <div class="timeline-label">${dayLabel}</div>
       <div class="timeline-bar">`;
 
-    // Add event dots
-    dayEvents.forEach(event => {
-      const position = (event.timeMinutes / 1440) * 100; // 1440 = minutes in a day
-      const eventClass = event.value ? 'on' : 'off';
-      const time = formatTime(event.hourOfDay, event.minuteOfHour);
-      const status = event.value ? __('settings.statusOn') : __('settings.statusOff');
-      html += `<div class="timeline-event ${eventClass}" 
-                    style="left: ${position}%"
-                    title="${time} - ${status}"></div>`;
+    // Group events that are close together (within 5% of day = ~72 minutes)
+    const groupedEvents = groupCloseEvents(dayEvents, 5);
+
+    // Add event dots or groups
+    groupedEvents.forEach(group => {
+      const position = (group.position / 1440) * 100; // 1440 = minutes in a day
+
+      if (group.events.length === 1) {
+        // Single event - show as normal dot
+        const event = group.events[0];
+        const eventClass = event.value ? 'on' : 'off';
+        const time = formatTime(event.hourOfDay, event.minuteOfHour);
+        const status = event.value ? __('settings.statusOn') : __('settings.statusOff');
+        html += `<div class="timeline-event ${eventClass}"
+                      style="left: ${position}%"
+                      title="${time} - ${status}"></div>`;
+      } else {
+        // Multiple events - show as grouped badge
+        const tooltipData = group.events.map(e => ({
+          time: formatTime(e.hourOfDay, e.minuteOfHour),
+          status: e.value ? __('settings.statusOn') : __('settings.statusOff'),
+          value: e.value
+        }));
+
+        const tooltipDataJson = JSON.stringify(tooltipData).replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+
+        html += `<div class="timeline-event-group"
+                      style="left: ${position}%"
+                      data-events='${tooltipDataJson}'
+                      onmouseenter="showEventTooltip(event)"
+                      onmouseleave="hideEventTooltip()"
+                      onclick="showEventGroupModal(event)">
+                   <span class="event-count">${group.events.length}</span>
+                 </div>`;
+      }
     });
 
     html += `</div></div>`;
@@ -514,4 +591,185 @@ async function copyToClipboard(text) {
   } catch (error) {
     showStatus(__('settings.copyFailed'), 'error');
   }
+}
+
+/**
+ * Show tooltip for grouped events
+ */
+function showEventTooltip(event) {
+  // Remove existing tooltip
+  hideEventTooltip();
+
+  // Get the event group element (could be the span or the div)
+  const target = event.target.closest('.timeline-event-group');
+  if (!target) return;
+
+  // Get events data from data attribute
+  const eventsDataJson = target.getAttribute('data-events');
+  if (!eventsDataJson) return;
+
+  let eventsData;
+  try {
+    eventsData = JSON.parse(eventsDataJson);
+  } catch (e) {
+    console.error('Failed to parse events data:', e);
+    return;
+  }
+
+  // Build tooltip content (limit to first 10 events if there are many)
+  const MAX_TOOLTIP_EVENTS = 10;
+  const showCount = Math.min(eventsData.length, MAX_TOOLTIP_EVENTS);
+  const hiddenCount = eventsData.length - showCount;
+
+  const content = eventsData.slice(0, showCount).map(e => {
+    const icon = e.value ? '🟢' : '🔴';
+    return `<div class="tooltip-event-line">${icon} ${e.time} - ${e.status}</div>`;
+  }).join('');
+
+  const moreIndicator = hiddenCount > 0
+    ? `<div class="tooltip-more-indicator">... en ${hiddenCount} meer</div>`
+    : '';
+
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.id = 'event-tooltip';
+  tooltip.className = 'event-tooltip';
+  tooltip.innerHTML = content + moreIndicator;
+
+  document.body.appendChild(tooltip);
+
+  // Position tooltip with smart positioning
+  const rect = target.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  const margin = 10;
+
+  let left, top;
+  let position = 'above'; // Track which position we use
+
+  // Try 1: Above the element (preferred)
+  top = rect.top - tooltipRect.height - margin;
+  left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+  // Check if fits above
+  if (top < margin) {
+    // Try 2: Below the element
+    top = rect.bottom + margin;
+    position = 'below';
+
+    // Check if fits below
+    if (top + tooltipRect.height > viewportHeight - margin) {
+      // Try 3: To the right
+      left = rect.right + margin;
+      top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+      position = 'right';
+
+      // Check if fits to the right
+      if (left + tooltipRect.width > viewportWidth - margin) {
+        // Try 4: To the left
+        left = rect.left - tooltipRect.width - margin;
+        position = 'left';
+
+        // Final fallback: center on screen (shouldn't happen often)
+        if (left < margin) {
+          left = (viewportWidth - tooltipRect.width) / 2;
+          top = (viewportHeight - tooltipRect.height) / 2;
+          position = 'center';
+        }
+      }
+    }
+  }
+
+  // Keep horizontal position within viewport for above/below
+  if (position === 'above' || position === 'below') {
+    if (left < margin) left = margin;
+    if (left + tooltipRect.width > viewportWidth - margin) {
+      left = viewportWidth - tooltipRect.width - margin;
+    }
+  }
+
+  // Keep vertical position within viewport for left/right
+  if (position === 'left' || position === 'right') {
+    if (top < margin) top = margin;
+    if (top + tooltipRect.height > viewportHeight - margin) {
+      top = viewportHeight - tooltipRect.height - margin;
+    }
+  }
+
+  tooltip.className = `event-tooltip ${position}`;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+
+  // Fade in
+  setTimeout(() => tooltip.classList.add('visible'), 10);
+}
+
+/**
+ * Hide event tooltip
+ */
+function hideEventTooltip() {
+  const tooltip = document.getElementById('event-tooltip');
+  if (tooltip) {
+    tooltip.remove();
+  }
+}
+
+/**
+ * Show modal with all events in a group
+ */
+function showEventGroupModal(event) {
+  event.stopPropagation();
+
+  // Hide tooltip first
+  hideEventTooltip();
+
+  // Get the event group element
+  const target = event.currentTarget;
+  const eventsDataJson = target.getAttribute('data-events');
+
+  if (!eventsDataJson) return;
+
+  let eventsData;
+  try {
+    eventsData = JSON.parse(eventsDataJson);
+  } catch (e) {
+    console.error('Failed to parse events data:', e);
+    return;
+  }
+
+  // Build modal content
+  let html = `<p style="color: #666; margin-bottom: 15px;">
+    ${__('settings.showingGroupedEvents', { count: eventsData.length })}
+  </p>`;
+
+  html += '<table class="events-table">';
+  html += `
+    <thead>
+      <tr>
+        <th>${__('settings.time')}</th>
+        <th>${__('settings.status')}</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
+
+  eventsData.forEach(e => {
+    const statusColor = e.value ? '#4CAF50' : '#f44336';
+    const statusIcon = e.value ? '🟢' : '🔴';
+    const statusText = statusIcon + ' ' + e.status;
+
+    html += `
+      <tr>
+        <td style="font-weight: 500;">${e.time}</td>
+        <td style="color: ${statusColor}; font-weight: bold;">${statusText}</td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table>';
+
+  document.getElementById('eventsModalTitle').textContent = __('settings.groupedEventsTitle');
+  document.getElementById('eventsModalContent').innerHTML = html;
+  document.getElementById('eventsModal').classList.add('active');
 }

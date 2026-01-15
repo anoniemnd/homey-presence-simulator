@@ -1,0 +1,3 @@
+Närvarosimulator spelar automatiskt upp dina belysningsmönster från exakt en vecka sedan och simulerar din närvaro hemma. Appen spårar när dina lampor, uttag och strömbrytare slås på och av under veckan och spelar sedan upp dessa exakta mönster när du aktiverar simuleringsläget - enheter slås på och av vid samma tider som en vecka tidigare.
+
+Perfekt för semestrar eller när du är borta hemifrån. Välj helt enkelt de enheter du vill spåra i appinställningarna, låt den spela in i en vecka och aktivera simuleringsläget vid behov. För snabbare installation kan du valfritt importera upp till 50 senaste på/av-händelser från Homey Insights när du lägger till enheter. Den visuella tidslinjen och händelsehistoriken hjälper dig att granska mönster innan du aktiverar simuleringen.

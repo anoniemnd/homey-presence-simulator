@@ -7,7 +7,7 @@
     "debugTools": "Strumenti di debug",
     "applicationLogs": "Log dell'applicazione",
     "infoSimulator": "Attiva il simulatore di presenza per iniziare a riprodurre i pattern registrati",
-    "infoAddDevices": "Seleziona uno o più dispositivi per iniziare a monitorare i loro pattern di accensione/spegnimento.<ul><li>Vengono mostrati solo luci, prese e gruppi contenenti luci/prese.</li><li>I dispositivi già monitorati sono nascosti.</li></ul>",
+    "infoAddDevices": "Seleziona uno o più dispositivi per iniziare a monitorare i loro pattern di accensione/spegnimento.<ul><li>Vengono mostrati solo luci, prese, interruttori e gruppi contenenti luci/prese/interruttori.</li><li>I dispositivi già monitorati sono nascosti.</li></ul>",
     "infoDebugTools": "Strumenti di sviluppo per la risoluzione dei problemi",
     "infoLogs": "Visualizza i log dell'applicazione in tempo reale per il debug",
     "simulatorIs": "Il simulatore è",
