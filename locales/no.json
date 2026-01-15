@@ -7,7 +7,7 @@
     "debugTools": "Feilsøkingsverktøy",
     "applicationLogs": "Applikasjonslogger",
     "infoSimulator": "Aktiver tilstedeværelsessimulatoren for å starte avspilling av innspilte mønstre",
-    "infoAddDevices": "Velg en eller flere enheter for å begynne å spore deres på/av-mønstre.<ul><li>Kun lamper, stikkontakter og grupper som inneholder lamper/stikkontakter vises.</li><li>Enheter som allerede spores er skjult.</li></ul>",
+    "infoAddDevices": "Velg en eller flere enheter for å begynne å spore deres på/av-mønstre.<ul><li>Kun lamper, stikkontakter, brytere og grupper som inneholder lamper/stikkontakter/brytere vises.</li><li>Enheter som allerede spores er skjult.</li></ul>",
     "infoDebugTools": "Utviklingsverktøy for feilsøking",
     "infoLogs": "Vis sanntids applikasjonslogger for feilsøking",
     "simulatorIs": "Simulator er",

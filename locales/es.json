@@ -7,7 +7,7 @@
     "debugTools": "Herramientas de depuración",
     "applicationLogs": "Registros de aplicación",
     "infoSimulator": "Active el simulador de presencia para comenzar a reproducir patrones grabados",
-    "infoAddDevices": "Seleccione uno o más dispositivos para comenzar a rastrear sus patrones de encendido/apagado.<ul><li>Solo se muestran luces, enchufes y grupos que contienen luces/enchufes.</li><li>Los dispositivos ya rastreados están ocultos.</li></ul>",
+    "infoAddDevices": "Seleccione uno o más dispositivos para comenzar a rastrear sus patrones de encendido/apagado.<ul><li>Solo se muestran luces, enchufes, interruptores y grupos que contienen luces/enchufes/interruptores.</li><li>Los dispositivos ya rastreados están ocultos.</li></ul>",
     "infoDebugTools": "Herramientas de desarrollo para solución de problemas",
     "infoLogs": "Ver registros de aplicación en tiempo real para depuración",
     "simulatorIs": "El simulador está",

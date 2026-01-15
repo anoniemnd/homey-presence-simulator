@@ -7,7 +7,7 @@
     "debugTools": "Narzędzia debugowania",
     "applicationLogs": "Logi aplikacji",
     "infoSimulator": "Włącz symulator obecności, aby rozpocząć odtwarzanie zarejestrowanych wzorców",
-    "infoAddDevices": "Wybierz jedno lub więcej urządzeń, aby rozpocząć śledzenie ich wzorców włączania/wyłączania.<ul><li>Wyświetlane są tylko lampy, gniazdka i grupy zawierające lampy/gniazdka.</li><li>Urządzenia już śledzone są ukryte.</li></ul>",
+    "infoAddDevices": "Wybierz jedno lub więcej urządzeń, aby rozpocząć śledzenie ich wzorców włączania/wyłączania.<ul><li>Wyświetlane są tylko lampy, gniazdka, przełączniki i grupy zawierające lampy/gniazdka/przełączniki.</li><li>Urządzenia już śledzone są ukryte.</li></ul>",
     "infoDebugTools": "Narzędzia programistyczne do rozwiązywania problemów",
     "infoLogs": "Wyświetl logi aplikacji w czasie rzeczywistym do debugowania",
     "simulatorIs": "Symulator jest",

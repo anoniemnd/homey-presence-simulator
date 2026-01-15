@@ -7,7 +7,7 @@
     "debugTools": "Felsökningsverktyg",
     "applicationLogs": "Applikationsloggar",
     "infoSimulator": "Aktivera närvarosimulatorn för att börja spela upp inspelade mönster",
-    "infoAddDevices": "Välj en eller flera enheter för att börja spåra deras på/av-mönster.<ul><li>Endast lampor, uttag och grupper som innehåller lampor/uttag visas.</li><li>Enheter som redan spåras är dolda.</li></ul>",
+    "infoAddDevices": "Välj en eller flera enheter för att börja spåra deras på/av-mönster.<ul><li>Endast lampor, uttag, strömbrytare och grupper som innehåller lampor/uttag/strömbrytare visas.</li><li>Enheter som redan spåras är dolda.</li></ul>",
     "infoDebugTools": "Utvecklingsverktyg för felsökning",
     "infoLogs": "Visa applikationsloggar i realtid för felsökning",
     "simulatorIs": "Simulatorn är",
