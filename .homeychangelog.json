@@ -4,5 +4,8 @@
   },
   "1.0.1": {
     "en": "Added community topic"
+  },
+  "1.0.2": {
+    "en": "- Added: Multi-channel device support (e.g., Fibaro Walli switches with multiple outputs)\n- Fixed: Reduced storage writes to protect eMMC lifespan (per-device storage instead of saving all devices)\n- Fixed: Optimized memory usage by reusing single HomeyAPI instance instead of recreating multiple times\n- Fixed: Optimized polling interval (5s → 5 min)"
   }
 }
