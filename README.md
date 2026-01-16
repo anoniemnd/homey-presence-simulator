@@ -20,14 +20,14 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 
 ## ✨ Features
 
-- **📊 Automatic Tracking** - Records your lighting patterns without manual intervention
-- **🔄 Week-Based Replay** - Replays patterns from exactly one week ago (same day, same time)
-- **📈 Visual Timeline** - See your weekly lighting patterns at a glance per day
-- **📝 Event History** - Review when each device was turned on/off with detailed timestamps
-- **🎛️ Simple Controls** - Enable/disable simulation mode with one click
-- **💡 Smart Filtering** - Automatically filters to show only lights, sockets, and compatible groups
-- **👥 Group Support** - Track device groups and automatically handle individual devices
-- **📥 Import History** - Import up to 50 historical events from Homey Insights when adding devices
+- **📊 Automatic tracking** - Records your lighting patterns without manual intervention
+- **🔄 Week-Based replay** - Replays patterns from exactly one week ago (same day, same time)
+- **📈 Visual timeline** - See your weekly lighting patterns at a glance per day
+- **📝 Event history** - Review when each device was turned on/off with detailed timestamps
+- **🎛️ Simple controls** - Enable/disable simulation mode with one click
+- **💡 Smart filtering** - Automatically filters to show only lights, sockets, and compatible groups
+- **👥 Group support** - Track device groups and automatically handle individual devices
+- **📥 Import history** - Import up to 50 historical events from Homey Insights when adding devices
 
 ---
 
@@ -46,32 +46,8 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 
 1. **Track your patterns** - The app automatically records when your selected devices turn on/off
 2. **Review the timeline** - Check the visual timeline to see your weekly patterns
-3. **Enable simulation** - When desired, enable "Simulation Mode" in the app settings
+3. **Enable simulation** - When desired, enable "Simulation Mode" in the app settings or use a flow card to enable or disable the simulation mode.
 4. **Automatic replay** - Your devices will turn on/off automatically based on patterns from one week ago
-
----
-
-## 📸 Screenshots
-
-### Device Selection
-Select which devices to track for presence simulation.
-
-![Device Selection](./assets/screenshots/device-selector.png)
-
-### Tracked Devices
-View your tracked devices. Via the menu you can: 
-- Import Insights (if you didn't while adding the device)
-- View events (you can also click on the tracked device to do that)
-- Remove history
-- Remove the device (stop tracking and simulating)
-
-![Tracked Devices](./assets/screenshots/tracked-devices.png)
-
-### Event History
-Detailed view of all on/off events for each device.
-You can even click on a badge to view all events for that moment.
-
-![Event History](./assets/screenshots/events-modal.png)
 
 ---
 
@@ -79,10 +55,17 @@ You can even click on a badge to view all events for that moment.
 
 ### App Settings
 
-- **Tracked Devices** - Add or remove devices to track
 - **Simulation Mode** - Toggle to enable/disable pattern replay
-- **Timeline View** - Visualize patterns per day of the week (Monday - Sunday)
-- **Event History** - View detailed on/off events with timestamps
+- **Device selection** - Select which devices should replay on/off patterns when simulation mode is enabled. You can use the import function to import a maximum of 50 events.
+
+  ![Device Selection](./assets/screenshots/device-selector.png)
+- **Tracked devices** - View the devices that are being tracked. You can view week patterns with detailed on/off events, import history, remove the history and remove the device:
+
+  ![Tracked Devices](./assets/screenshots/tracked-devices.png)
+- **Timeline view** - Visualize patterns per day of the week (Monday - Sunday). You can even click on a badge to view all events for that moment.
+
+  ![Event History](./assets/screenshots/events-modal.png)
+- **Recent events** - View detailed on/off events with timestamps for recent events.
 
 ### Requirements
 
