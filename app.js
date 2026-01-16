@@ -8,16 +8,34 @@ const VERBOSE = false; // Enable verbose logging for troubleshooting
 
 class VacationModeApp extends Homey.App {
 
+  /**
+   * Parse a tracking key into deviceId and capability
+   * @param {string} trackingKey - The tracking key
+   * @returns {{deviceId: string, capability: string}} Parsed components
+   */
+  parseTrackingKey(trackingKey) {
+    const colonIndex = trackingKey.indexOf(':');
+    if (colonIndex === -1) {
+      // Legacy format without capability, assume 'onoff'
+      return { deviceId: trackingKey, capability: 'onoff' };
+    }
+    return {
+      deviceId: trackingKey.substring(0, colonIndex),
+      capability: trackingKey.substring(colonIndex + 1)
+    };
+  }
+
   async onInit() {
     // Initialize log buffer
     this.recentLogs = [];
     this.maxLogs = 200;
 
-    // Detecteer timezone van Homey systeem
-    this.timezone = this.homey.clock.getTimezone();
-
     this.logInfo('Vacation Mode app starting...');
-    this.logInfo(`Detected timezone: ${this.timezone}`);
+
+    // Initialize HomeyAPI - cache for reuse
+    const { HomeyAPI } = require('homey-api');
+    this.api = await HomeyAPI.createAppAPI({ homey: this.homey });
+    this.logInfo('HomeyAPI instance created and cached');
 
     // Initialize state
     this.vacationModeActive = false;
@@ -49,41 +67,39 @@ class VacationModeApp extends Homey.App {
   // Format datum voor logging in gebruiker's timezone
   formatDate(date) {
     if (!date) date = this.getCurrentDate();
-    return date.toLocaleString('nl-NL', {
-      timeZone: this.timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
+    // Use simpler ISO format for better performance
+    // toLocaleString is relatively expensive and called frequently
+    const isoString = date.toISOString();
+    // Convert to readable format: 2026-01-16T14:30:45.123Z -> 2026-01-16 14:30:45
+    return isoString.replace('T', ' ').substring(0, 19);
   }
 
   // Helper function to log and store
   logInfo(message) {
+    // Trim logs array BEFORE adding to prevent temporary memory spikes during burst logging
+    if (this.recentLogs.length >= this.maxLogs) {
+      this.recentLogs.shift();
+    }
     const timestamp = this.formatDate();
     this.recentLogs.push({
       timestamp,
       message: typeof message === 'string' ? message : JSON.stringify(message),
       level: 'info'
     });
-    if (this.recentLogs.length > this.maxLogs) {
-      this.recentLogs.shift();
-    }
     this.log(message);
   }
 
   logError(message) {
+    // Trim logs array BEFORE adding to prevent temporary memory spikes during burst logging
+    if (this.recentLogs.length >= this.maxLogs) {
+      this.recentLogs.shift();
+    }
     const timestamp = this.formatDate();
     this.recentLogs.push({
       timestamp,
       message: typeof message === 'string' ? message : JSON.stringify(message),
       level: 'error'
     });
-    if (this.recentLogs.length > this.maxLogs) {
-      this.recentLogs.shift();
-    }
     this.error(message);
   }
 
@@ -110,21 +126,36 @@ class VacationModeApp extends Homey.App {
         this.testMode = savedTestMode;
       }
 
-      const savedHistory = this.homey.settings.get('deviceHistory');
-      if (savedHistory) {
-        this.deviceHistory = new Map(Object.entries(savedHistory));
+      // Load tracked devices list first
+      const savedTrackedDevices = this.homey.settings.get('trackedDevices');
+      const trackedDeviceIds = savedTrackedDevices && Array.isArray(savedTrackedDevices) ? savedTrackedDevices : [];
+
+      // Load each device's history from Settings
+      this.deviceHistory = new Map();
+      for (const trackingKey of trackedDeviceIds) {
+        const storageKey = trackingKey.replace(/:/g, '_');
+        const historyJson = this.homey.settings.get(`device_history_${storageKey}`);
+        if (historyJson) {
+          try {
+            const history = JSON.parse(historyJson);
+            this.deviceHistory.set(trackingKey, history);
+          } catch (err) {
+            this.logError(`Failed to parse history for ${trackingKey}: ${err.message}`);
+          }
+        }
       }
 
-      const savedTrackedDevices = this.homey.settings.get('trackedDevices');
-      if (savedTrackedDevices && Array.isArray(savedTrackedDevices)) {
-        this.logInfo(`Found ${savedTrackedDevices.length} devices to restore tracking for`);
+      // Restore tracking for devices
+      if (trackedDeviceIds.length > 0) {
+        this.logInfo(`Found ${trackedDeviceIds.length} devices to restore tracking for`);
 
-        for (const deviceId of savedTrackedDevices) {
+        for (const trackingKey of trackedDeviceIds) {
           try {
-            await this.startTrackingDevice(deviceId);
-            this.logInfo(`✓ Successfully restored tracking for ${deviceId}`);
+            // The capability is embedded in the tracking key, startTrackingDevice will parse it
+            await this.startTrackingDevice(trackingKey);
+            this.logInfo(`✓ Successfully restored tracking for ${trackingKey}`);
           } catch (err) {
-            this.logError(`✗ Failed to restore tracking for ${deviceId}: ${err.message}`);
+            this.logError(`✗ Failed to restore tracking for ${trackingKey}: ${err.message}`);
           }
         }
       }
@@ -159,19 +190,48 @@ class VacationModeApp extends Homey.App {
     }
   }
 
-  async saveState() {
+
+  // Save only a single device's history
+  async saveDeviceHistory(trackingKey) {
+    try {
+      const history = this.deviceHistory.get(trackingKey);
+      if (history) {
+        // Replace colons with underscores for storage key (colons not allowed in some storage systems)
+        const storageKey = trackingKey.replace(/:/g, '_');
+        this.homey.settings.set(`device_history_${storageKey}`, JSON.stringify(history));
+      }
+    } catch (error) {
+      this.logError(`Error saving history for ${trackingKey}:`, error);
+    }
+  }
+
+  // Save vacation mode setting only
+  async saveVacationMode() {
     try {
       this.homey.settings.set('vacationModeActive', this.vacationModeActive);
-      this.homey.settings.set('testMode', this.testMode);
+    } catch (error) {
+      this.logError('Error saving vacation mode:', error);
+    }
+  }
 
-      const historyObj = Object.fromEntries(this.deviceHistory);
-      this.homey.settings.set('deviceHistory', historyObj);
-
+  // Save tracked devices list only
+  async saveTrackedDevices() {
+    try {
       const trackedDeviceIds = Array.from(this.trackedDevices.keys());
       this.homey.settings.set('trackedDevices', trackedDeviceIds);
-
     } catch (error) {
-      this.logError('Error saving state:', error);
+      this.logError('Error saving tracked devices:', error);
+    }
+  }
+
+  // Remove a device's history from storage
+  async removeDeviceHistory(trackingKey) {
+    try {
+      // Replace colons with underscores for storage key
+      const storageKey = trackingKey.replace(/:/g, '_');
+      this.homey.settings.unset(`device_history_${storageKey}`);
+    } catch (error) {
+      this.logError(`Error removing history for ${trackingKey}:`, error);
     }
   }
 
@@ -199,130 +259,142 @@ class VacationModeApp extends Homey.App {
     }
   }
 
-  async startTrackingDevice(deviceId) {
-    if (this.trackedDevices.has(deviceId)) {
-      this.logInfo(`Device ${deviceId} is already being tracked`);
+  async startTrackingDevice(trackingKey, capability) {
+    if (this.trackedDevices.has(trackingKey)) {
+      this.logInfo(`Device ${trackingKey} is already being tracked`);
       return;
     }
 
     try {
-      const { HomeyAPI } = require('homey-api');
-      const api = await HomeyAPI.createAppAPI({ homey: this.homey });
-      const device = await api.devices.getDevice({ id: deviceId });
+      // Parse the tracking key to get deviceId and capability
+      const { deviceId } = this.parseTrackingKey(trackingKey);
+      const device = await this.api.devices.getDevice({ id: deviceId });
 
-      if (!device.capabilitiesObj || !device.capabilitiesObj.onoff) {
-        throw new Error('Device does not have onoff capability');
+      // Use the capability passed in, or parse from tracking key
+      if (!capability) {
+        capability = this.parseTrackingKey(trackingKey).capability;
       }
 
-      this.logInfo(`Setting up listener for: ${device.name}`);
-      this.logInfo(`Current onoff state: ${device.capabilitiesObj.onoff.value}`);
+      if (!device.capabilitiesObj || !device.capabilitiesObj[capability]) {
+        throw new Error(`Device does not have ${capability} capability`);
+      }
+
+      const capabilityObj = device.capabilitiesObj[capability];
+      const capabilityTitle = capabilityObj.title || capability;
+
+      this.logInfo(`Setting up listener for: ${device.name} (${capabilityTitle})`);
+      this.logInfo(`Current ${capability} state: ${capabilityObj.value}`);
 
       const listener = async (value) => {
-        this.logInfo(`!!! LISTENER TRIGGERED !!! ${device.name} -> ${value}`);
-        await this.recordDeviceEvent(deviceId, value);
+        this.logInfo(`!!! LISTENER TRIGGERED !!! ${device.name} (${capabilityTitle}) -> ${value}`);
+        await this.recordDeviceEvent(trackingKey, value);
       };
 
+      // Try to register listener using makeCapabilityInstance (works for HomeyAPI devices)
       try {
-        device.capabilitiesObj.onoff.on('value', listener);
-        this.logInfo(`Registered capabilitiesObj listener for ${device.name}`);
-      } catch (err1) {
-        this.logInfo(`Method 1 failed: ${err1.message}`);
+        await device.makeCapabilityInstance(capability, listener);
+        this.logInfo(`Registered listener for ${device.name} (${capabilityTitle})`);
+      } catch (err) {
+        // Listener failed, fall back to polling
+        this.logInfo(`Listener registration failed for ${device.name} (${capabilityTitle}): ${err.message}`);
+        this.logInfo(`Falling back to polling method (5 minute interval)`);
 
-        try {
-          await device.makeCapabilityInstance('onoff', listener);
-          this.logInfo(`Registered makeCapabilityInstance listener for ${device.name}`);
-        } catch (err2) {
-          this.logInfo(`Method 2 failed: ${err2.message}`);
+        const pollInterval = this.homey.setInterval(async () => {
+          try {
+            // Only fetch the device to read capability
+            // This is more efficient than storing the full device object
+            const freshDevice = await this.api.devices.getDevice({ id: deviceId });
+            const currentValue = freshDevice.capabilitiesObj[capability].value;
+            const tracked = this.trackedDevices.get(trackingKey);
 
-          this.logInfo(`Falling back to polling method for ${device.name}`);
-          const pollInterval = this.homey.setInterval(async () => {
-            try {
-              const freshDevice = await api.devices.getDevice({ id: deviceId });
-              const currentValue = freshDevice.capabilitiesObj.onoff.value;
-              const tracked = this.trackedDevices.get(deviceId);
-
-              if (tracked && tracked.lastValue !== currentValue) {
-                this.logInfo(`!!! POLL DETECTED CHANGE !!! ${device.name} -> ${currentValue}`);
-                tracked.lastValue = currentValue;
-                await this.recordDeviceEvent(deviceId, currentValue);
-              }
-            } catch (pollErr) {
-              this.logError(`Poll error for ${device.name}:`, pollErr);
+            if (tracked && tracked.lastValue !== currentValue) {
+              this.logInfo(`!!! POLL DETECTED CHANGE !!! ${tracked.name} -> ${currentValue}`);
+              tracked.lastValue = currentValue;
+              await this.recordDeviceEvent(trackingKey, currentValue);
             }
-          }, 5000);
+          } catch (pollErr) {
+            const tracked = this.trackedDevices.get(trackingKey);
+            const deviceName = tracked ? tracked.name : trackingKey;
+            this.logError(`Poll error for ${deviceName}:`, pollErr);
+          }
+        }, 300000); // 5 minutes
 
-          this.trackedDevices.set(deviceId, {
-            device,
-            listener,
-            name: device.name,
-            lastValue: device.capabilitiesObj.onoff.value,
-            pollInterval: pollInterval
-          });
+        // Store minimal info: name for logging, lastValue for polling comparison, pollInterval for cleanup
+        // Device object NOT stored to save memory
+        this.trackedDevices.set(trackingKey, {
+          name: `${device.name} - ${capabilityTitle}`,
+          capability: capability,
+          lastValue: capabilityObj.value,
+          pollInterval: pollInterval,
+          deviceObject: device // Keep device object for listener cleanup
+        });
 
-          await this.saveState();
-          this.logInfo(`Started tracking device with POLLING: ${device.name} (${deviceId})`);
-          return;
-        }
+        await this.saveTrackedDevices();
+        this.logInfo(`Started tracking device with POLLING: ${device.name} (${capabilityTitle}) [${trackingKey}]`);
+        return;
       }
 
-      this.trackedDevices.set(deviceId, {
-        device,
-        listener,
-        name: device.name,
-        lastValue: device.capabilitiesObj.onoff.value
+      // Store minimal info: name for logging, listener reference and device object for cleanup
+      this.trackedDevices.set(trackingKey, {
+        name: `${device.name} - ${capabilityTitle}`,
+        capability: capability,
+        lastValue: capabilityObj.value,
+        listener: listener, // Keep listener reference for proper cleanup
+        deviceObject: device // Keep device object for listener cleanup
       });
 
-      if (!this.deviceHistory.has(deviceId)) {
-        this.deviceHistory.set(deviceId, []);
+      if (!this.deviceHistory.has(trackingKey)) {
+        this.deviceHistory.set(trackingKey, []);
       }
 
-      await this.saveState();
+      await this.saveTrackedDevices();
 
-      this.logInfo(`Started tracking device: ${device.name} (${deviceId})`);
+      this.logInfo(`Started tracking device: ${device.name} (${capabilityTitle}) [${trackingKey}]`);
     } catch (error) {
-      this.logError(`Failed to start tracking device ${deviceId}:`, error);
+      this.logError(`Failed to start tracking device ${trackingKey}:`, error);
       throw error;
     }
   }
 
-  async stopTrackingDevice(deviceId) {
-    if (!this.trackedDevices.has(deviceId)) {
-      this.logInfo(`Device ${deviceId} is not being tracked`);
+  async stopTrackingDevice(trackingKey) {
+    if (!this.trackedDevices.has(trackingKey)) {
+      this.logInfo(`Device ${trackingKey} is not being tracked`);
       return;
     }
 
     try {
-      const tracked = this.trackedDevices.get(deviceId);
+      const tracked = this.trackedDevices.get(trackingKey);
 
       if (tracked.pollInterval) {
         this.homey.clearInterval(tracked.pollInterval);
         this.logInfo(`Stopped polling for ${tracked.name}`);
       }
 
-      if (tracked.device && tracked.listener) {
+      if (tracked.listener && tracked.deviceObject && tracked.capability) {
         try {
-          tracked.device.capabilitiesObj.onoff.removeListener('value', tracked.listener);
+          tracked.deviceObject.capabilitiesObj[tracked.capability].removeListener('value', tracked.listener);
+          this.logInfo(`Removed listener for ${tracked.name}`);
         } catch (err) {
           this.logInfo(`Could not remove listener: ${err.message}`);
         }
       }
 
-      this.trackedDevices.delete(deviceId);
+      this.trackedDevices.delete(trackingKey);
 
-      if (this.scheduledTimeouts.has(deviceId)) {
-        this.homey.clearTimeout(this.scheduledTimeouts.get(deviceId));
-        this.scheduledTimeouts.delete(deviceId);
+      if (this.scheduledTimeouts.has(trackingKey)) {
+        this.homey.clearTimeout(this.scheduledTimeouts.get(trackingKey));
+        this.scheduledTimeouts.delete(trackingKey);
       }
 
-      await this.saveState();
+      await this.saveTrackedDevices();
 
-      this.logInfo(`Stopped tracking device: ${tracked.name} (${deviceId})`);
+      this.logInfo(`Stopped tracking device: ${tracked.name} [${trackingKey}]`);
     } catch (error) {
-      this.logError(`Failed to stop tracking device ${deviceId}:`, error);
+      this.logError(`Failed to stop tracking device ${trackingKey}:`, error);
     }
   }
 
-  async recordDeviceEvent(deviceId, value) {
+  async recordDeviceEvent(trackingKey, value) {
     const now = this.getCurrentDate();
 
     const event = {
@@ -334,7 +406,7 @@ class VacationModeApp extends Homey.App {
       timeMinutes: now.getHours() * 60 + now.getMinutes()
     };
 
-    let history = this.deviceHistory.get(deviceId) || [];
+    let history = this.deviceHistory.get(trackingKey) || [];
     history.push(event);
 
     // Keep 8 days of history to ensure we always have the previous week's event
@@ -342,15 +414,22 @@ class VacationModeApp extends Homey.App {
     const cutoffTime = Date.now() - keepDuration;
     history = history.filter(e => e.timestamp > cutoffTime);
 
-    this.deviceHistory.set(deviceId, history);
-    await this.saveState();
+    // Also limit maximum number of events to prevent uncontrolled growth
+    const MAX_EVENTS = 10000;
+    if (history.length > MAX_EVENTS) {
+      history = history.slice(-MAX_EVENTS);
+    }
+
+    this.deviceHistory.set(trackingKey, history);
+    // Only save this device's history, not the entire state
+    await this.saveDeviceHistory(trackingKey);
 
     const timeStr = this.formatDate(now);
 
     if (this.testMode) {
-      this.logInfo(`Recorded: ${deviceId} -> ${value} at ${timeStr} (minute ${event.minuteOfHour})`);
+      this.logInfo(`Recorded: ${trackingKey} -> ${value} at ${timeStr} (minute ${event.minuteOfHour})`);
     } else {
-      this.logInfo(`Recorded: ${deviceId} -> ${value} at ${timeStr} (day ${event.dayOfWeek})`);
+      this.logInfo(`Recorded: ${trackingKey} -> ${value} at ${timeStr} (day ${event.dayOfWeek})`);
     }
   }
 
@@ -361,12 +440,11 @@ class VacationModeApp extends Homey.App {
     }
 
     this.vacationModeActive = true;
-    await this.saveState();
+    await this.saveVacationMode();
 
     this.logInfo('======================================');
     this.logInfo('Vacation mode ENABLED');
     this.logInfo(`Mode: ${this.testMode ? 'TEST (hourly replay)' : 'NORMAL (daily replay)'}`);
-    this.logInfo(`Timezone: ${this.timezone}`);
     this.logInfo(`Tracked devices: ${this.trackedDevices.size}`);
     this.logInfo(`Device history entries: ${this.deviceHistory.size}`);
     this.logInfo('======================================');
@@ -408,7 +486,7 @@ class VacationModeApp extends Homey.App {
     }
 
     this.vacationModeActive = false;
-    await this.saveState();
+    await this.saveVacationMode();
 
     this.logInfo('Vacation mode DISABLED');
 
@@ -615,24 +693,36 @@ class VacationModeApp extends Homey.App {
     this.logInfo('');
   }
 
-  async executeAction(deviceId, value) {
+  async executeAction(trackingKey, value) {
     if (!this.vacationModeActive) {
       return;
     }
 
     try {
-      const tracked = this.trackedDevices.get(deviceId);
+      const tracked = this.trackedDevices.get(trackingKey);
       if (!tracked) {
-        this.logInfo(`Device ${deviceId} no longer tracked`);
+        this.logInfo(`Device ${trackingKey} no longer tracked`);
         return;
       }
 
-      const { device } = tracked;
-      await device.setCapabilityValue('onoff', value);
+      // Parse tracking key to get actual device ID
+      const { deviceId } = this.parseTrackingKey(trackingKey);
+      const capability = tracked.capability || 'onoff';
 
-      this.logInfo(`✓ Executed: ${device.name} -> ${value}`);
+      // Fetch device on-demand to get current state (ensures device still exists and is online)
+      const device = await this.api.devices.getDevice({ id: deviceId });
+      const currentValue = device.capabilitiesObj[capability].value;
+
+      // Skip if device is already in desired state (avoids unnecessary API calls)
+      if (currentValue === value) {
+        this.logInfo(`✓ Skipped: ${tracked.name} already ${value ? 'ON' : 'OFF'}`);
+        return;
+      }
+
+      await device.setCapabilityValue(capability, value);
+      this.logInfo(`✓ Executed: ${tracked.name} -> ${value ? 'ON' : 'OFF'}`);
     } catch (error) {
-      this.logError(`Failed to execute action for ${deviceId}:`, error);
+      this.logError(`Failed to execute action for ${trackingKey}:`, error);
     }
   }
 
@@ -685,13 +775,13 @@ class VacationModeApp extends Homey.App {
         const eventDate = new Date(lastEventBeforeTarget.timestamp);
 
         try {
-          const { HomeyAPI } = require('homey-api');
-          const api = await HomeyAPI.createAppAPI({ homey: this.homey });
-          const device = await api.devices.getDevice({ id: deviceId });
-          const currentState = device.capabilitiesObj.onoff.value;
+          const { deviceId: actualDeviceId } = this.parseTrackingKey(deviceId);
+          const capability = tracked.capability || 'onoff';
+          const device = await this.api.devices.getDevice({ id: actualDeviceId });
+          const currentState = device.capabilitiesObj[capability].value;
 
           if (currentState !== lastEventBeforeTarget.value) {
-            await device.setCapabilityValue('onoff', lastEventBeforeTarget.value);
+            await device.setCapabilityValue(capability, lastEventBeforeTarget.value);
             syncActions.push({
               deviceName: tracked.name,
               status: 'synced',
@@ -798,9 +888,10 @@ class VacationModeApp extends Homey.App {
           return new Date(e.timestamp).getTime() > cutoffTime;
         });
         this.deviceHistory.set(deviceId, filtered);
+        // Save each device's history individually
+        await this.saveDeviceHistory(deviceId);
       }
 
-      await this.saveState();
       this.logInfo('Cleanup completed');
     }, 24 * 60 * 60 * 1000);
   }

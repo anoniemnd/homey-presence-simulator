@@ -1,5 +1,4 @@
 'use strict';
-const { HomeyAPI } = require('homey-api');
 
 /**
  * Check if a device is a group
@@ -24,18 +23,72 @@ function isDeviceGroup(device) {
     return driverCheck || classCheck || settingsCheck;
 }
 
+/**
+ * Get all onoff capabilities from a device
+ * @param {object} device - The device object to check
+ * @returns {Array<string>} Array of onoff capability names (e.g., ['onoff'], ['onoff.output1', 'onoff.output2'])
+ */
+function getOnOffCapabilities(device) {
+    if (!device.capabilitiesObj) {
+        return [];
+    }
+
+    const onoffCapabilities = [];
+
+    // Check for standard onoff capability
+    if (device.capabilitiesObj.onoff) {
+        onoffCapabilities.push('onoff');
+    }
+
+    // Check for onoff.* sub-capabilities (e.g., onoff.output1, onoff.output2)
+    for (const capabilityName in device.capabilitiesObj) {
+        if (capabilityName.startsWith('onoff.')) {
+            onoffCapabilities.push(capabilityName);
+        }
+    }
+
+    return onoffCapabilities;
+}
+
+/**
+ * Create a tracking key for a device and capability
+ * @param {string} deviceId - The device ID
+ * @param {string} capability - The capability name (e.g., 'onoff', 'onoff.output1')
+ * @returns {string} Tracking key (e.g., 'deviceId:onoff.output1')
+ */
+function createTrackingKey(deviceId, capability) {
+    return `${deviceId}:${capability}`;
+}
+
+/**
+ * Parse a tracking key into deviceId and capability
+ * @param {string} trackingKey - The tracking key
+ * @returns {{deviceId: string, capability: string}} Parsed components
+ */
+function parseTrackingKey(trackingKey) {
+    const colonIndex = trackingKey.indexOf(':');
+    if (colonIndex === -1) {
+        // Legacy format without capability, assume 'onoff'
+        return { deviceId: trackingKey, capability: 'onoff' };
+    }
+    return {
+        deviceId: trackingKey.substring(0, colonIndex),
+        capability: trackingKey.substring(colonIndex + 1)
+    };
+}
+
 exports.getDevices = async function ({ homey }) {
     const app = homey.app;
-    const api = await HomeyAPI.createAppAPI({ homey });
-    const devices = await api.devices.getDevices();
-    const zones = await api.zones.getZones();
+    const devices = await app.api.devices.getDevices();
+    const zones = await app.api.zones.getZones();
 
     // Get tracked devices to check for groups
     const trackedDeviceIds = Array.from(app.trackedDevices.keys());
     const devicesInTrackedGroups = new Set();
 
     // Find all devices that are part of tracked groups
-    for (const deviceId of trackedDeviceIds) {
+    for (const trackingKey of trackedDeviceIds) {
+        const { deviceId } = parseTrackingKey(trackingKey);
         const device = devices[deviceId];
         if (device && isDeviceGroup(device)) {
             // This is a tracked group, add all its member devices to the exclusion set
@@ -45,58 +98,84 @@ exports.getDevices = async function ({ homey }) {
         }
     }
 
-    const devicesArray = Object.values(devices)
-        .filter(device => {
-            // Check of het een onoff capability heeft
-            const hasOnOff = device.capabilitiesObj && device.capabilitiesObj.onoff;
+    const devicesArray = [];
 
-            // Skip devices that are part of a tracked group
-            const isPartOfTrackedGroup = devicesInTrackedGroups.has(device.id);
+    for (const device of Object.values(devices)) {
+        // Skip devices that are part of a tracked group
+        const isPartOfTrackedGroup = devicesInTrackedGroups.has(device.id);
+        if (isPartOfTrackedGroup) {
+            continue;
+        }
 
-            // Filter op device class: alleen lights en sockets
-            const isLightOrSocket = device.class === 'light' || device.class === 'socket';
+        // Filter op device class: alleen lights en sockets
+        const isLightOrSocket = device.class === 'light' || device.class === 'socket';
 
-            // Voor groepen: check of de member devices light of socket zijn
-            const isGroup = isDeviceGroup(device);
-            let isValidGroup = false;
+        // Voor groepen: check of de member devices light of socket zijn
+        const isGroup = isDeviceGroup(device);
+        let isValidGroup = false;
 
-            if (isGroup && device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds)) {
-                // Check of ten minste één member device een light of socket is
-                isValidGroup = device.settings.deviceIds.some(memberId => {
-                    const memberDevice = devices[memberId];
-                    return memberDevice && (memberDevice.class === 'light' || memberDevice.class === 'socket');
-                });
+        if (isGroup && device.settings && device.settings.deviceIds && Array.isArray(device.settings.deviceIds)) {
+            // Check of ten minste één member device een light of socket is
+            isValidGroup = device.settings.deviceIds.some(memberId => {
+                const memberDevice = devices[memberId];
+                return memberDevice && (memberDevice.class === 'light' || memberDevice.class === 'socket');
+            });
+        }
+
+        // Skip devices that are not light/socket and not valid groups
+        if (!isLightOrSocket && !isValidGroup) {
+            continue;
+        }
+
+        // Get all onoff capabilities
+        const onoffCapabilities = getOnOffCapabilities(device);
+
+        if (onoffCapabilities.length === 0) {
+            continue;
+        }
+
+        // Get zone info
+        let zoneName = 'No zone';
+        let zoneId = null;
+        if (device.zone && zones[device.zone]) {
+            zoneName = zones[device.zone].name;
+            zoneId = device.zone;
+        } else if (device.zoneName) {
+            zoneName = device.zoneName;
+        }
+
+        // Create an entry for each onoff capability
+        for (const capability of onoffCapabilities) {
+            const trackingKey = createTrackingKey(device.id, capability);
+
+            // Create a display name
+            let displayName = device.name;
+            if (onoffCapabilities.length > 1) {
+                // Multi-channel device, add suffix
+                const capabilityTitle = device.capabilitiesObj[capability].title || capability;
+                displayName = `${device.name} - ${capabilityTitle}`;
             }
 
-            // Accepteer devices die:
-            // - onoff capability hebben
-            // - NIET onderdeel zijn van een getracked groep
-            // - light of socket zijn, OF een groep met light/socket members
-            return hasOnOff && !isPartOfTrackedGroup && (isLightOrSocket || isValidGroup);
-        })
-        .map(device => {
-            let zoneName = 'No zone';
-            let zoneId = null;
-            if (device.zone && zones[device.zone]) {
-                zoneName = zones[device.zone].name;
-                zoneId = device.zone;
-            } else if (device.zoneName) {
-                zoneName = device.zoneName;
-            }
-            return {
-                id: device.id,
-                name: device.name,
+            devicesArray.push({
+                id: trackingKey,  // Use tracking key as ID
+                deviceId: device.id,  // Original device ID
+                capability: capability,  // The specific capability
+                name: displayName,
                 zoneName: zoneName,
                 zoneId: zoneId,
                 capabilitiesObj: device.capabilitiesObj
-            };
-        })
-        .sort((a, b) => {
-            if (a.zoneName !== b.zoneName) {
-                return a.zoneName.localeCompare(b.zoneName, 'nl', { sensitivity: 'base' });
-            }
-            return a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' });
-        });
+            });
+        }
+    }
+
+    // Sort by zone and name
+    devicesArray.sort((a, b) => {
+        if (a.zoneName !== b.zoneName) {
+            return a.zoneName.localeCompare(b.zoneName, 'nl', { sensitivity: 'base' });
+        }
+        return a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' });
+    });
+
     return devicesArray;
 };
 
@@ -107,17 +186,18 @@ exports.getLogs = async function ({ homey }) {
 
 exports.trackDevice = async function ({ homey, body }) {
     const app = homey.app;
-    const { deviceId } = body;
+    const { deviceId: trackingKey } = body;  // This is actually a tracking key now
+
+    // Parse the tracking key
+    const { deviceId, capability } = parseTrackingKey(trackingKey);
 
     // Check if this is a group and if any of its member devices are already tracked
-    const { HomeyAPI } = require('homey-api');
-    const api = await HomeyAPI.createAppAPI({ homey });
-    const device = await api.devices.getDevice({ id: deviceId });
+    const device = await app.api.devices.getDevice({ id: deviceId });
 
     const removedDevices = [];
 
     const isGroup = isDeviceGroup(device);
-    app.logInfo(`trackDevice: ${device.name} (${deviceId}) - isGroup: ${isGroup}`);
+    app.logInfo(`trackDevice: ${device.name} (${trackingKey}) - isGroup: ${isGroup}`);
 
     if (isGroup) {
         app.logInfo(`Device settings: ${JSON.stringify(device.settings)}`);
@@ -128,17 +208,20 @@ exports.trackDevice = async function ({ homey, body }) {
             app.logInfo(`Checking ${device.settings.deviceIds.length} member devices`);
 
             for (const memberDeviceId of device.settings.deviceIds) {
-                app.logInfo(`Checking member device: ${memberDeviceId}, tracked: ${app.trackedDevices.has(memberDeviceId)}`);
+                // Check if any tracking key for this member device exists
+                const trackedKeys = Array.from(app.trackedDevices.keys()).filter(key => {
+                    const parsed = parseTrackingKey(key);
+                    return parsed.deviceId === memberDeviceId;
+                });
 
-                if (app.trackedDevices.has(memberDeviceId)) {
-                    // This member device is tracked, remove it
-                    const memberDevice = app.trackedDevices.get(memberDeviceId);
-                    await app.stopTrackingDevice(memberDeviceId);
+                for (const memberTrackingKey of trackedKeys) {
+                    const memberDevice = app.trackedDevices.get(memberTrackingKey);
+                    await app.stopTrackingDevice(memberTrackingKey);
                     removedDevices.push({
-                        id: memberDeviceId,
+                        id: memberTrackingKey,
                         name: memberDevice.name
                     });
-                    app.logInfo(`Auto-removed tracked device ${memberDevice.name} (${memberDeviceId}) because its group is now being tracked`);
+                    app.logInfo(`Auto-removed tracked device ${memberDevice.name} (${memberTrackingKey}) because its group is now being tracked`);
                 }
             }
         } else {
@@ -146,7 +229,7 @@ exports.trackDevice = async function ({ homey, body }) {
         }
     }
 
-    await app.startTrackingDevice(deviceId);
+    await app.startTrackingDevice(trackingKey, capability);
 
     return {
         success: true,
@@ -156,27 +239,27 @@ exports.trackDevice = async function ({ homey, body }) {
 
 exports.untrackDevice = async function ({ homey, body }) {
     const app = homey.app;
-    const { deviceId } = body;
-    await app.stopTrackingDevice(deviceId);
+    const { deviceId: trackingKey } = body;  // This is actually a tracking key now
+    await app.stopTrackingDevice(trackingKey);
     return { success: true };
 };
 
 exports.clearHistory = async function ({ homey, body }) {
     const app = homey.app;
-    const { deviceId } = body;
+    const { deviceId: trackingKey } = body;  // This is actually a tracking key now
 
-    if (!deviceId) {
+    if (!trackingKey) {
         throw new Error('deviceId parameter is required');
     }
 
     // Clear history in app memory
-    if (app.deviceHistory.has(deviceId)) {
-        app.deviceHistory.delete(deviceId);
-        app.log(`History cleared for device ${deviceId}`);
+    if (app.deviceHistory.has(trackingKey)) {
+        app.deviceHistory.delete(trackingKey);
+        app.log(`History cleared for device ${trackingKey}`);
     }
 
-    // Save state to persist the change
-    await app.saveState();
+    // Remove device history from storage
+    await app.removeDeviceHistory(trackingKey);
 
     return { success: true };
 };
@@ -212,16 +295,28 @@ exports.reloadSettings = async function ({ homey }) {
 
 exports.getEvents = async function ({ homey }) {
     const app = homey.app;
-    const api = await HomeyAPI.createAppAPI({ homey });
-    const allDevices = await api.devices.getDevices();
+    const allDevices = await app.api.devices.getDevices();
     const allEvents = [];
-    for (const [deviceId, events] of app.deviceHistory.entries()) {
+    for (const [trackingKey, events] of app.deviceHistory.entries()) {
+        const { deviceId, capability } = parseTrackingKey(trackingKey);
         const device = allDevices[deviceId];
-        const deviceName = device ? device.name : deviceId;
+
+        // Create display name
+        let deviceName = trackingKey;  // Fallback
+        if (device) {
+            deviceName = device.name;
+            // If this is a multi-channel device, add capability title
+            const onoffCapabilities = getOnOffCapabilities(device);
+            if (onoffCapabilities.length > 1) {
+                const capabilityTitle = device.capabilitiesObj[capability]?.title || capability;
+                deviceName = `${device.name} - ${capabilityTitle}`;
+            }
+        }
+
         events.forEach(event => {
             allEvents.push({
                 ...event,
-                deviceId: deviceId,
+                deviceId: trackingKey,
                 deviceName: deviceName
             });
         });
@@ -231,15 +326,15 @@ exports.getEvents = async function ({ homey }) {
 
 exports.generateTestData = async function ({ homey, body }) {
     const app = homey.app;
-    const { deviceId } = body;
+    const { deviceId: trackingKey } = body;  // This is actually a tracking key now
 
-    if (!deviceId) {
+    if (!trackingKey) {
         throw new Error('No deviceId provided');
     }
 
-    app.logInfo(`Generating test data for device: ${deviceId}`);
+    app.logInfo(`Generating test data for device: ${trackingKey}`);
 
-    let history = app.deviceHistory.get(deviceId) || [];
+    let history = app.deviceHistory.get(trackingKey) || [];
     const now = new Date();
     const eventsGenerated = [];
 
@@ -273,10 +368,10 @@ exports.generateTestData = async function ({ homey, body }) {
     });
 
     history.sort((a, b) => a.timestamp - b.timestamp);
-    app.deviceHistory.set(deviceId, history);
-    await app.saveState();
+    app.deviceHistory.set(trackingKey, history);
+    await app.saveDeviceHistory(trackingKey);
 
-    app.logInfo(`✓ Generated ${eventsGenerated.length} test events for ${deviceId}`);
+    app.logInfo(`✓ Generated ${eventsGenerated.length} test events for ${trackingKey}`);
     app.logInfo(`Events created around: ${new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleString('nl-NL')}`);
     app.logInfo(`Total history size: ${history.length} events`);
 
@@ -290,25 +385,23 @@ exports.generateTestData = async function ({ homey, body }) {
 
 exports.getDeviceInsights = async function ({ homey, query }) {
     const app = homey.app;
-    const { deviceId } = query;
-    
-    if (!deviceId) {
+    const { deviceId: trackingKey } = query;  // This is actually a tracking key now
+
+    if (!trackingKey) {
         throw new Error('deviceId parameter is required');
     }
-    
+
     try {
-        const { HomeyAPI } = require('homey-api');
-        const api = await HomeyAPI.createAppAPI({ homey });
-        
-        const device = await api.devices.getDevice({ id: deviceId });
+        const { deviceId, capability } = parseTrackingKey(trackingKey);
+        const device = await app.api.devices.getDevice({ id: deviceId });
 
         // Check of het een groep is
         const isGroup = isDeviceGroup(device);
 
-        app.logInfo(`Device ${deviceId} (${device.name}) is ${isGroup ? 'a GROUP' : 'NOT a group'}`);
+        app.logInfo(`Device ${trackingKey} (${device.name}) is ${isGroup ? 'a GROUP' : 'NOT a group'}`);
 
         if (isGroup) {
-            
+
             // Check of de groep devices heeft
             if (!device.settings || !device.settings.deviceIds || device.settings.deviceIds.length === 0) {
                 return {
@@ -317,36 +410,38 @@ exports.getDeviceInsights = async function ({ homey, query }) {
                     isGroup: true
                 };
             }
-            
-            // Gebruik het eerste device uit de groep
+
+            // Gebruik het eerste device uit de groep met de capability
             const firstDeviceId = device.settings.deviceIds[0];
-            app.logInfo(`Using first device from group: ${firstDeviceId}`);
-            
+            const firstDeviceTrackingKey = createTrackingKey(firstDeviceId, capability);
+            app.logInfo(`Using first device from group: ${firstDeviceTrackingKey}`);
+
             // Recursief aanroepen met het device uit de groep
-            return await exports.getDeviceInsights({ homey, query: { deviceId: firstDeviceId } });
+            return await exports.getDeviceInsights({ homey, query: { deviceId: firstDeviceTrackingKey } });
         }
-        
-        // Check of device de onoff capability heeft
-        if (!device.capabilitiesObj || !device.capabilitiesObj.onoff) {
+
+        // Check of device de capability heeft
+        if (!device.capabilitiesObj || !device.capabilitiesObj[capability]) {
             return {
                 success: false,
-                error: 'Device does not have onoff capability',
+                error: `Device does not have ${capability} capability`,
                 availableCapabilities: Object.keys(device.capabilitiesObj || {})
             };
         }
-        
-        app.logInfo(`Getting insights for device ${deviceId} (${device.name})`);
-        
-        const insights = await api.insights.getLogs();
+
+        app.logInfo(`Getting insights for device ${trackingKey} (${device.name}) capability ${capability}`);
+
+        const insights = await app.api.insights.getLogs();
         const insightLogs = Object.values(insights);
-        
+
         app.logInfo(`Found ${insightLogs.length} total insight logs`);
-        
+
         let onoffLog = null;
         for (const log of insightLogs) {
-            if (log.ownerUri === device.uri && log.uri.includes(':onoff')) {
+            // Match the specific capability (e.g., :onoff.output1)
+            if (log.ownerUri === device.uri && log.uri.includes(`:${capability}`)) {
                 onoffLog = log;
-                app.logInfo(`Found matching onoff log: ${log.id}`);
+                app.logInfo(`Found matching log for ${capability}: ${log.id}`);
                 break;
             }
         }
@@ -354,8 +449,9 @@ exports.getDeviceInsights = async function ({ homey, query }) {
         if (!onoffLog) {
             return {
                 success: false,
-                error: 'No onoff insights log found for this device',
+                error: `No ${capability} insights log found for this device`,
                 deviceUri: device.uri,
+                capability: capability,
                 availableLogs: insightLogs
                     .filter(log => log.ownerUri === device.uri)
                     .map(log => ({ id: log.id, uri: log.uri, title: log.title }))
@@ -402,21 +498,22 @@ exports.getDeviceInsights = async function ({ homey, query }) {
 
 exports.importDeviceHistory = async function ({ homey, query }) {
     const app = homey.app;
-    const { deviceId } = query;
-    
-    if (!deviceId) {
+    const { deviceId: trackingKey } = query;  // This is actually a tracking key now
+
+    if (!trackingKey) {
         throw new Error('deviceId parameter is required');
     }
-    
+
     try {
-        app.logInfo(`Starting import of Insights history for device ${deviceId}`);
-        const api = await HomeyAPI.createAppAPI({ homey });
-        const device = await api.devices.getDevice({ id: deviceId });
-        
+        app.logInfo(`Starting import of Insights history for device ${trackingKey}`);
+        const { deviceId, capability } = parseTrackingKey(trackingKey);
+        const device = await app.api.devices.getDevice({ id: deviceId });
+
         // ✅ DEBUG: Log alle device properties
         app.logInfo(`Device properties: ${JSON.stringify({
             id: device.id,
             name: device.name,
+            capability: capability,
             driverUri: device.driverUri,
             class: device.class,
             virtualClass: device.virtualClass,
@@ -424,13 +521,13 @@ exports.importDeviceHistory = async function ({ homey, query }) {
             hasSettings: !!device.settings,
             settingsDevices: device.settings ? device.settings.devices : null
         })}`);
-        
+
         // ✅ Check of het een groep is
-        const isGroup = device.driverUri && device.driverUri.includes('homey:virtualdrivergroup:driver');
-        
+        const isGroup = isDeviceGroup(device);
+
         if (isGroup) {
-            app.logInfo(`Device ${deviceId} (${device.name}) is a GROUP, getting history from first device`);
-            
+            app.logInfo(`Device ${trackingKey} (${device.name}) is a GROUP, getting history from first device`);
+
             // Check of de groep devices heeft
             if (!device.settings || !device.settings.deviceIds || device.settings.deviceIds.length === 0) {
                 return {
@@ -439,29 +536,33 @@ exports.importDeviceHistory = async function ({ homey, query }) {
                     imported: 0
                 };
             }
-            
-            // Gebruik het eerste device uit de groep
+
+            // Gebruik het eerste device uit de groep met de capability
             const firstDeviceId = device.settings.deviceIds[0];
-            app.logInfo(`Using first device from group: ${firstDeviceId}`);
-            
+            const firstDeviceTrackingKey = createTrackingKey(firstDeviceId, capability);
+            app.logInfo(`Using first device from group: ${firstDeviceTrackingKey}`);
+
             // Recursief aanroepen met het device uit de groep
-            const result = await exports.importDeviceHistory({ homey, query: { deviceId: firstDeviceId } });
-            
+            const result = await exports.importDeviceHistory({ homey, query: { deviceId: firstDeviceTrackingKey } });
+
             // Als succesvol, kopieer de history ook naar de groep zelf
             if (result.success && result.imported > 0) {
-                const firstDeviceHistory = app.deviceHistory.get(firstDeviceId);
+                const firstDeviceHistory = app.deviceHistory.get(firstDeviceTrackingKey);
                 if (firstDeviceHistory) {
-                    app.deviceHistory.set(deviceId, [...firstDeviceHistory]);
-                    await app.saveState();
-                    app.logInfo(`Copied ${firstDeviceHistory.length} events to group ${deviceId}`);
+                    app.deviceHistory.set(trackingKey, [...firstDeviceHistory]);
+                    app.logInfo(`Copied ${firstDeviceHistory.length} events to group ${trackingKey}`);
+                    // Save will happen below, no need to save twice
                 }
             }
-            
+
+            // Save the group's history once (either copied or empty)
+            await app.saveDeviceHistory(trackingKey);
+
             return result;
         }
-        
+
         // Haal Insights data op (max 50 entries)
-        const insightsResult = await exports.getDeviceInsights({ homey, query: { deviceId } });
+        const insightsResult = await exports.getDeviceInsights({ homey, query: { deviceId: trackingKey } });
         
         if (!insightsResult.success) {
             return {
@@ -497,31 +598,31 @@ exports.importDeviceHistory = async function ({ homey, query }) {
         importedEvents.sort((a, b) => a.timestamp - b.timestamp);
         
         // Haal bestaande history op
-        let history = app.deviceHistory.get(deviceId) || [];
-        
+        let history = app.deviceHistory.get(trackingKey) || [];
+
         // Check welke events al bestaan
         const existingTimestamps = new Set(history.map(e => e.timestamp));
-        
+
         // Filter alleen nieuwe events
         const newEvents = importedEvents.filter(e => !existingTimestamps.has(e.timestamp));
-        
+
         // Voeg nieuwe events toe
         history.push(...newEvents);
-        
+
         // Sorteer de volledige array
         history.sort((a, b) => a.timestamp - b.timestamp);
-        
+
         // Limiteer totale history size (max 10000 events)
         const MAX_EVENTS = 10000;
         if (history.length > MAX_EVENTS) {
             history = history.slice(-MAX_EVENTS);
         }
-        
+
         // Update de Map
-        app.deviceHistory.set(deviceId, history);
-        
-        // Sla op
-        await app.saveState();
+        app.deviceHistory.set(trackingKey, history);
+
+        // Save only this device's history
+        await app.saveDeviceHistory(trackingKey);
         
         const oldestEvent = importedEvents[0];
         const newestEvent = importedEvents[importedEvents.length - 1];
