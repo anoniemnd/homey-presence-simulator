@@ -48,27 +48,8 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 
 1. **Track your patterns** - The app automatically records when your selected devices turn on/off
 2. **Review the timeline** - Check the visual timeline to see your weekly patterns
-3. **Enable simulation** - When desired, enable "Simulation Mode" in the app settings
+3. **Enable simulation** - When desired, enable "Simulation Mode" in the app settings or use a flow card to enable or disable the simulation mode.
 4. **Automatic replay** - Your devices will turn on/off automatically based on patterns from one week ago
-
----
-
-## 📸 Screenshots
-
-### Device Selection
-Select which devices to track for presence simulation.
-
-![Device Selection](./assets/screenshots/device-selector.png)
-
-### Tracked Devices & Timeline
-View your tracked devices with their weekly on/off patterns visualized in a timeline.
-
-![Tracked Devices](./assets/screenshots/tracked-devices.png)
-
-### Event History
-Detailed view of all on/off events for each device.
-
-![Event History](./assets/screenshots/events-modal.png)
 
 ---
 
@@ -76,10 +57,17 @@ Detailed view of all on/off events for each device.
 
 ### App Settings
 
-- **Tracked Devices** - Add or remove devices to track
 - **Simulation Mode** - Toggle to enable/disable pattern replay
-- **Timeline View** - Visualize patterns per day of the week (Monday - Sunday)
-- **Event History** - View detailed on/off events with timestamps
+- **Device selection** - Select which devices should replay on/off patterns when simulation mode is enabled. You can use the import function to import a maximum of 50 events.
+
+  ![Device Selection](./assets/screenshots/device-selector.png)
+- **Tracked devices** - View the devices that are being tracked. You can view week patterns with detailed on/off events, import history, remove the history and remove the device:
+
+  ![Tracked Devices](./assets/screenshots/tracked-devices.png)
+- **Timeline view** - Visualize patterns per day of the week (Monday - Sunday). You can even click on a badge to view all events for that moment.
+
+  ![Event History](./assets/screenshots/events-modal.png)
+- **Recent events** - View detailed on/off events with timestamps for recent events.
 
 ### Requirements
 
