@@ -6,10 +6,10 @@
  * @returns {boolean} True if the device is a group
  */
 function isDeviceGroup(device) {
-    // Check driver URI for group drivers
-    const driverCheck = (device.driverUri && device.driverUri.includes('homey:virtualdrivergroup:driver')) ||
+    // Check driver ID for group drivers
+    const driverCheck = (device.driverId && device.driverId.includes('homey:virtualdrivergroup:driver')) ||
                        (device.driver && device.driver.includes('homey:virtualdrivergroup:driver')) ||
-                       (device.driverUri && device.driverUri.includes('homey:app:com.sdn.group')) ||
+                       (device.driverId && device.driverId.includes('homey:app:com.sdn.group')) ||
                        (device.driver && device.driver.includes('homey:app:com.sdn.group'));
 
     // Check device class properties
@@ -514,7 +514,7 @@ exports.importDeviceHistory = async function ({ homey, query }) {
             id: device.id,
             name: device.name,
             capability: capability,
-            driverUri: device.driverUri,
+            driverId: device.driverId,
             class: device.class,
             virtualClass: device.virtualClass,
             virtual: device.virtual,
