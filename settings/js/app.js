@@ -6,7 +6,7 @@
 // ========================================
 // CONFIGURATION
 // ========================================
-const DEBUG = true; // Set to true for development/debugging
+const DEBUG = false; // Set to true for development/debugging
 
 // ========================================
 // GLOBAL STATE
