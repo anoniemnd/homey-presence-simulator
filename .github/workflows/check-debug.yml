@@ -1,0 +1,42 @@
+name: Check DEBUG Flags
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-debug:
+    runs-on: ubuntu-latest
+    name: Verify DEBUG = false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check app.js DEBUG flag
+        run: |
+          echo "Checking app.js for DEBUG = true..."
+          if grep -E "^const DEBUG = true" app.js; then
+            echo "❌ ERROR: app.js has DEBUG = true"
+            echo "Please set DEBUG = false before pushing to main"
+            exit 1
+          fi
+          echo "✓ app.js DEBUG check passed"
+
+      - name: Check settings/js/app.js DEBUG flag
+        run: |
+          echo "Checking settings/js/app.js for DEBUG = true..."
+          if grep -E "^const DEBUG = true" settings/js/app.js; then
+            echo "❌ ERROR: settings/js/app.js has DEBUG = true"
+            echo "Please set DEBUG = false before pushing to main"
+            exit 1
+          fi
+          echo "✓ settings/js/app.js DEBUG check passed"
+
+      - name: All checks passed
+        run: |
+          echo "✅ All DEBUG flags are set to false"
