@@ -58,6 +58,8 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 ### App Settings
 
 - **Simulation Mode** - Toggle to enable/disable pattern replay
+
+  ![Device Selection](./assets/screenshots/simulator-switch.png)
 - **Device selection** - Select which devices should replay on/off patterns when simulation mode is enabled. You can use the import function to import a maximum of 50 events.
 
   ![Device Selection](./assets/screenshots/device-selector.png)
