@@ -1,11 +1,38 @@
 {
   "1.0.0": {
-    "en": "First version!"
+    "en": "First version!",
+    "nl": "Eerste versie!",
+    "de": "Erste Version!",
+    "fr": "Première version !",
+    "es": "¡Primera versión!",
+    "it": "Prima versione!",
+    "sv": "Första versionen!",
+    "no": "Første versjon!",
+    "da": "Første version!",
+    "pl": "Pierwsza wersja!"
   },
   "1.0.1": {
-    "en": "Added community topic"
+    "en": "Added community topic",
+    "nl": "Community topic toegevoegd",
+    "de": "Community-Thema hinzugefügt",
+    "fr": "Sujet communautaire ajouté",
+    "es": "Tema de la comunidad añadido",
+    "it": "Argomento della community aggiunto",
+    "sv": "Lagt till community-ämne",
+    "no": "Lagt til community-emne",
+    "da": "Tilføjet community-emne",
+    "pl": "Dodano temat społeczności"
   },
   "1.0.2": {
-    "en": "- Added: Multi-channel device support (e.g., Fibaro Walli switches with multiple outputs)\n- Fixed: Reduced storage writes to protect eMMC lifespan (per-device storage instead of saving all devices)\n- Fixed: Optimized memory usage by reusing single HomeyAPI instance instead of recreating multiple times\n- Fixed: Optimized polling interval (5s → 5 min)"
+    "en": "- Added: Multi-channel device support (e.g., Fibaro Walli switches with multiple outputs)\n- Fixed: Reduced storage writes to protect eMMC lifespan (per-device storage instead of saving all devices)\n- Fixed: Optimized memory usage by reusing single HomeyAPI instance instead of recreating multiple times\n- Fixed: Optimized polling interval (5s → 5 min)",
+    "nl": "- Toegevoegd: Ondersteuning voor multi-channel apparaten (bijv. Fibaro Walli schakelaars met meerdere uitgangen)\n- Opgelost: Verminderde opslagopdrachten om eMMC levensduur te beschermen (per-apparaat opslag in plaats van alle apparaten opslaan)\n- Opgelost: Geoptimaliseerd geheugengebruik door hergebruik van enkele HomeyAPI instantie in plaats van meerdere keren aanmaken\n- Opgelost: Geoptimaliseerd polling-interval (5s → 5 min)",
+    "de": "- Hinzugefügt: Mehrkanalgeräte-Unterstützung (z.B. Fibaro Walli-Schalter mit mehreren Ausgängen)\n- Behoben: Reduzierte Speicherzugriffe zum Schutz der eMMC-Lebensdauer (gerätespezifische Speicherung statt Speichern aller Geräte)\n- Behoben: Optimierte Speichernutzung durch Wiederverwendung einer einzelnen HomeyAPI-Instanz statt mehrfacher Neuerstellung\n- Behoben: Optimiertes Polling-Intervall (5s → 5 min)",
+    "fr": "- Ajouté : Prise en charge des appareils multi-canaux (par ex. interrupteurs Fibaro Walli avec plusieurs sorties)\n- Corrigé : Réduction des écritures de stockage pour protéger la durée de vie de l'eMMC (stockage par appareil au lieu de sauvegarder tous les appareils)\n- Corrigé : Optimisation de l'utilisation de la mémoire en réutilisant une seule instance HomeyAPI au lieu de la recréer plusieurs fois\n- Corrigé : Optimisation de l'intervalle de polling (5s → 5 min)",
+    "es": "- Añadido: Soporte para dispositivos multicanal (p. ej., interruptores Fibaro Walli con múltiples salidas)\n- Corregido: Escrituras de almacenamiento reducidas para proteger la vida útil del eMMC (almacenamiento por dispositivo en lugar de guardar todos los dispositivos)\n- Corregido: Uso de memoria optimizado reutilizando una única instancia de HomeyAPI en lugar de recrearla múltiples veces\n- Corregido: Intervalo de sondeo optimizado (5s → 5 min)",
+    "it": "- Aggiunto: Supporto per dispositivi multicanale (ad es. interruttori Fibaro Walli con più uscite)\n- Risolto: Ridotte le scritture di archiviazione per proteggere la durata dell'eMMC (archiviazione per dispositivo invece di salvare tutti i dispositivi)\n- Risolto: Ottimizzato l'uso della memoria riutilizzando una singola istanza HomeyAPI invece di ricrearla più volte\n- Risolto: Ottimizzato intervallo di polling (5s → 5 min)",
+    "sv": "- Tillagt: Stöd för flerkanalsenheter (t.ex. Fibaro Walli-brytare med flera utgångar)\n- Fixat: Reducerade lagringsskrivningar för att skydda eMMC-livslängd (lagring per enhet istället för att spara alla enheter)\n- Fixat: Optimerad minnesanvändning genom återanvändning av en enda HomeyAPI-instans istället för att återskapa flera gånger\n- Fixat: Optimerat pollningsintervall (5s → 5 min)",
+    "no": "- Lagt til: Støtte for flerkanalenheter (f.eks. Fibaro Walli-brytere med flere utganger)\n- Rettet: Reduserte lagringsskriving for å beskytte eMMC-levetid (lagring per enhet i stedet for å lagre alle enheter)\n- Rettet: Optimalisert minnebruk ved å gjenbruke én enkelt HomeyAPI-instans i stedet for å gjenskape flere ganger\n- Rettet: Optimalisert avstemningsintervall (5s → 5 min)",
+    "da": "- Tilføjet: Understøttelse af multi-kanal enheder (f.eks. Fibaro Walli switches med flere udgange)\n- Rettet: Reducerede lagerskrivninger for at beskytte eMMC-levetid (lagring pr. enhed i stedet for at gemme alle enheder)\n- Rettet: Optimeret hukommelsesbrug ved at genbruge en enkelt HomeyAPI-instans i stedet for at genskabe flere gange\n- Rettet: Optimeret pollinginterval (5s → 5 min)",
+    "pl": "- Dodano: Obsługa urządzeń wielokanałowych (np. przełączniki Fibaro Walli z wieloma wyjściami)\n- Naprawiono: Zmniejszono zapisy do pamięci w celu ochrony żywotności eMMC (przechowywanie per urządzenie zamiast zapisywania wszystkich urządzeń)\n- Naprawiono: Zoptymalizowano użycie pamięci poprzez ponowne użycie pojedynczej instancji HomeyAPI zamiast wielokrotnego tworzenia\n- Naprawiono: Zoptymalizowano interwał odpytywania (5s → 5 min)"
   }
 }
