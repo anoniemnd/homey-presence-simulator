@@ -20,16 +20,16 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 
 ## ✨ Features
 
-- **📊 Automatic Tracking** - Records your lighting patterns without manual intervention
-- **🔄 Week-Based Replay** - Replays patterns from exactly one week ago (same day, same time)
-- **📈 Visual Timeline** - See your weekly lighting patterns at a glance per day
-- **📝 Event History** - Review when each device was turned on/off with detailed timestamps
-- **🎛️ Simple Controls** - Enable/disable simulation mode with one click
-- **💡 Smart Filtering** - Automatically filters to show only lights, sockets, and compatible groups
-- **👥 Group Support** - Track device groups and automatically handle individual devices
-- **🔌 Multi-Channel Support** - Full support for devices with multiple outputs (e.g., Fibaro Walli switches)
-- **📥 Import History** - Import up to 50 historical events from Homey Insights when adding devices
-- **⚡ Performance Optimized** - Minimal storage writes and efficient memory usage to protect your Homey
+- **📊 Automatic tracking** - Records your lighting patterns without manual intervention
+- **🔄 Week-based replay** - Replays patterns from exactly one week ago (same day, same time)
+- **📈 Visual timeline** - See your weekly lighting patterns at a glance per day
+- **📝 Event history** - Review when each device was turned on/off with detailed timestamps
+- **🎛️ Simple controls** - Enable/disable simulation mode with one click
+- **💡 Smart filtering** - Automatically filters to show only lights, sockets, and compatible groups
+- **👥 Group support** - Track device groups and automatically handle individual devices
+- **🔌 Multi-channel support** - Full support for devices with multiple outputs (e.g., Fibaro Walli switches)
+- **📥 Import history** - Import up to 50 historical events from Homey Insights when adding devices
+- **⚡ Performance optimized** - Minimal storage writes and efficient memory usage to protect your Homey
 
 ---
 
