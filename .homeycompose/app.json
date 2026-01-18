@@ -71,10 +71,6 @@
       "method": "POST",
       "path": "/reload-settings"
     },
-    "testLog": {
-      "method": "POST",
-      "path": "/test-log"
-    },
     "generateTestData": {
       "method": "POST",
       "path": "/generate-test-data"
