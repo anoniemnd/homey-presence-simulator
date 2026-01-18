@@ -397,6 +397,19 @@ class VacationModeApp extends Homey.App {
   async recordDeviceEvent(trackingKey, value) {
     const now = this.getCurrentDate();
 
+    // Get existing history
+    let history = this.deviceHistory.get(trackingKey) || [];
+
+    // Check if the last event has the same value (duplicate detection)
+    // This prevents duplicate events from listener bugs (listeners can fire 4-6x)
+    if (history.length > 0) {
+      const lastEvent = history[history.length - 1];
+      if (lastEvent.value === value) {
+        this.logInfo(`Duplicate event ignored: ${trackingKey} -> ${value} (same as last event)`);
+        return; // Skip recording duplicate
+      }
+    }
+
     const event = {
       timestamp: now.getTime(),
       value: value,
@@ -406,7 +419,6 @@ class VacationModeApp extends Homey.App {
       timeMinutes: now.getHours() * 60 + now.getMinutes()
     };
 
-    let history = this.deviceHistory.get(trackingKey) || [];
     history.push(event);
 
     // Keep 8 days of history to ensure we always have the previous week's event
