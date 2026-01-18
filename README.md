@@ -152,6 +152,7 @@ https://github.com/anoniemnd/homey-presence-simulator/issues
 - **Fixed**: Reduced storage writes to protect eMMC lifespan (per-device storage instead of saving all devices)
 - **Fixed**: Optimized memory usage by reusing single HomeyAPI instance instead of recreating multiple times
 - **Fixed**: Optimized polling interval (5s → 5 min)
+- **Fixed**: Prevent duplicate event recording from listener
 
 ### Version 1.0.1
 - Added community topic
