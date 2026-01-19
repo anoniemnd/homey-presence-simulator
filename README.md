@@ -117,6 +117,27 @@ Presence Simulator replays your lighting patterns from one week ago. The app aut
 
 ---
 
+## 🔐 Privacy & Permissions
+
+### Required Permission: `homey:manager:api`
+
+This app requires access to the Homey API to function. Here's exactly what we use it for:
+
+| Usage | Location | Purpose |
+|-------|----------|---------|
+| `api.devices.getDevices()` | [api.js:82](api.js#L82), [api.js:298](api.js#L298) | List available devices for selection and display names |
+| `api.devices.getDevice()` | [app.js:271](app.js#L271), [app.js:725](app.js#L725), [app.js:792](app.js#L792) | Read current device state |
+| `device.setCapabilityValue()` | [app.js:734](app.js#L734), [app.js:796](app.js#L796) | Turn devices on/off (**only when simulation is enabled**) |
+| `api.insights.getLogs()` | [api.js:434](api.js#L434) | Import historical data (optional, user-initiated) |
+
+### What we DON'T do:
+- ❌ No data leaves your Homey - everything is stored locally
+- ❌ No cloud connections or external servers
+- ❌ No analytics or tracking of your usage
+- ❌ No access to other apps or personal data
+
+---
+
 ## 📝 License
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
