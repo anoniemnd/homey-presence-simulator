@@ -127,6 +127,7 @@ This app requires access to the Homey API to function. Here's exactly what we us
 |-------|----------|---------|
 | `api.devices.getDevices()` | [api.js:82](api.js#L82), [api.js:298](api.js#L298) | List available devices for selection and display names |
 | `api.devices.getDevice()` | [app.js:271](app.js#L271), [app.js:725](app.js#L725), [app.js:792](app.js#L792) | Read current device state |
+| `api.zones.getZones()` | [api.js:83](api.js#L83) | Display zone names in device selector |
 | `device.setCapabilityValue()` | [app.js:734](app.js#L734), [app.js:796](app.js#L796) | Turn devices on/off (**only when simulation is enabled**) |
 | `api.insights.getLogs()` | [api.js:434](api.js#L434) | Import historical data (optional, user-initiated) |
 
