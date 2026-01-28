@@ -64,15 +64,27 @@ function formatTime(hours, minutes) {
 function formatRelativeTime(timestamp) {
   const now = Date.now();
   const diff = now - timestamp;
-  
+
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  
-  if (days > 0) return __('settings.daysAgo', { count: days });
-  if (hours > 0) return __('settings.hoursAgo', { count: hours });
-  if (minutes > 0) return __('settings.minutesAgo', { count: minutes });
+
+  if (days > 0) {
+    return days === 1
+      ? __('settings.oneDayAgo')
+      : __('settings.daysAgo', { count: days });
+  }
+  if (hours > 0) {
+    return hours === 1
+      ? __('settings.oneHourAgo')
+      : __('settings.hoursAgo', { count: hours });
+  }
+  if (minutes > 0) {
+    return minutes === 1
+      ? __('settings.oneMinuteAgo')
+      : __('settings.minutesAgo', { count: minutes });
+  }
   return __('settings.justNow');
 }
 
@@ -85,3 +97,4 @@ function getDayAbbr(dayIndex) {
   const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   return __('settings.' + days[dayIndex]);
 }
+

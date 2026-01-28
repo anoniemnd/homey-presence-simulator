@@ -20,7 +20,7 @@ window.availableDevices = [];
 function onHomeyReady(HomeyAPI) {
   // Set global Homey reference
   window.Homey = HomeyAPI;
-  
+
   // Signal that we're ready
   HomeyAPI.ready();
 
