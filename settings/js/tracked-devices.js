@@ -28,7 +28,8 @@ async function loadTrackedDevices() {
 
       const deviceEvents = eventsData.events.filter(e => e.deviceId === deviceId);
       const eventCount = deviceEvents.length;
-      const lastEvent = deviceEvents.length > 0 ? deviceEvents[0] : null;
+      // Events are sorted oldest-first, so get the last element for the most recent event
+      const lastEvent = deviceEvents.length > 0 ? deviceEvents[deviceEvents.length - 1] : null;
       const lastEventTime = lastEvent ? formatRelativeTime(lastEvent.timestamp) : __('settings.never');
 
       const cardHtml = renderDeviceCard(device, deviceId, eventCount, lastEventTime, deviceEvents);

@@ -169,6 +169,11 @@ https://github.com/anoniemnd/homey-presence-simulator/issues
 
 ## 📋 Changelog
 
+### Version 1.0.3
+- **Fixed**: "Last activity" indicator showed oldest event instead of most recent event
+- **Fixed**: Singular/plural forms now display correctly (e.g., "1 day ago" instead of "1 day/days ago")
+- **Fixed**: Tuned light background greys so that dark mode inversion yields a softer dark grey instead of harsh pure black.
+
 ### Version 1.0.2
 - **Added**: Multi-channel device support (e.g., Fibaro Walli switches with multiple outputs)
 - **Fixed**: Reduced storage writes to protect eMMC lifespan (per-device storage instead of saving all devices)
