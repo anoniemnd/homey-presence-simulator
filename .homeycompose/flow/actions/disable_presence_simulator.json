@@ -1,6 +1,14 @@
 {
-    "title": {
-      "en": "Disable simulation",
-      "nl": "Schakel simulatie uit"
-    }
+  "title": {
+    "en": "Disable simulation",
+    "nl": "Schakel simulatie uit",
+    "da": "Deaktivér simulering",
+    "de": "Simulation deaktivieren",
+    "es": "Desactivar simulación",
+    "fr": "Désactiver la simulation",
+    "it": "Disattiva simulazione",
+    "no": "Deaktiver simulering",
+    "pl": "Wyłącz symulację",
+    "sv": "Inaktivera simulering"
   }
+}

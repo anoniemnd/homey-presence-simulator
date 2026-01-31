@@ -1,6 +1,14 @@
 {
-    "title": {
-      "en": "Enable simulation",
-      "nl": "Schakel simulatie in"
-    }
+  "title": {
+    "en": "Enable simulation",
+    "nl": "Schakel simulatie in",
+    "da": "Aktivér simulering",
+    "de": "Simulation aktivieren",
+    "es": "Activar simulación",
+    "fr": "Activer la simulation",
+    "it": "Attiva simulazione",
+    "no": "Aktiver simulering",
+    "pl": "Włącz symulację",
+    "sv": "Aktivera simulering"
   }
+}

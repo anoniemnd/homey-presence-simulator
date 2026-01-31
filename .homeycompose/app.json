@@ -1,6 +1,6 @@
 {
   "id": "com.simulator.presence",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -8,15 +8,43 @@
   ],
   "name": {
     "en": "Presence Simulator",
-    "nl": "Aanwezigheidssimulator"
+    "nl": "Aanwezigheidssimulator",
+    "de": "Anwesenheitssimulator",
+    "fr": "Simulateur de présence",
+    "es": "Simulador de presencia",
+    "it": "Simulatore di presenza",
+    "sv": "Närvarosimulator",
+    "no": "Tilstedeværelsessimulator",
+    "da": "Tilstedeværelsessimulator",
+    "pl": "Symulator obecności"
   },
   "description": {
     "en": "Simulate presence by automatically replaying your lighting patterns from a week ago",
-    "nl": "Simuleer aanwezigheid door verlichtingspatronen van een week geleden automatisch te herhalen"
+    "nl": "Simuleer aanwezigheid door verlichtingspatronen van een week geleden automatisch te herhalen",
+    "de": "Simulieren Sie Anwesenheit durch automatisches Abspielen Ihrer Beleuchtungsmuster von vor einer Woche",
+    "fr": "Simulez votre présence en rejouant automatiquement vos schémas d'éclairage d'il y a une semaine",
+    "es": "Simula presencia reproduciendo automáticamente tus patrones de iluminación de hace una semana",
+    "it": "Simula la presenza riproducendo automaticamente i tuoi schemi di illuminazione di una settimana fa",
+    "sv": "Simulera närvaro genom att automatiskt spela upp dina belysningsscheman från en vecka sedan",
+    "no": "Simuler tilstedeværelse ved automatisk avspilling av belysningsrytmen din fra en uke siden",
+    "da": "Simuler tilstedeværelse ved automatisk at afspille dine belysningsmønstre fra en uge siden",
+    "pl": "Symuluj obecność automatycznie odtwarzając wzorce oświetlenia sprzed tygodnia"
   },
   "category": [
     "tools"
   ],
+  "tags": {
+    "en": ["presence", "vacation", "holiday", "simulation", "security", "lighting", "away", "burglar", "deterrent", "home"],
+    "nl": ["aanwezigheid", "vakantie", "simulatie", "beveiliging", "verlichting", "afwezig", "inbreker", "thuis"],
+    "de": ["Anwesenheit", "Urlaub", "Simulation", "Sicherheit", "Beleuchtung", "abwesend", "Einbrecher", "Zuhause"],
+    "fr": ["présence", "vacances", "simulation", "sécurité", "éclairage", "absent", "cambrioleur", "maison"],
+    "es": ["presencia", "vacaciones", "simulación", "seguridad", "iluminación", "ausente", "ladrón", "hogar"],
+    "it": ["presenza", "vacanza", "simulazione", "sicurezza", "illuminazione", "assente", "ladro", "casa"],
+    "sv": ["närvaro", "semester", "simulering", "säkerhet", "belysning", "borta", "inbrottstjuv", "hem"],
+    "no": ["tilstedeværelse", "ferie", "simulering", "sikkerhet", "belysning", "borte", "innbruddstyv", "hjem"],
+    "da": ["tilstedeværelse", "ferie", "simulering", "sikkerhed", "belysning", "væk", "indbrudstyv", "hjem"],
+    "pl": ["obecność", "wakacje", "symulacja", "bezpieczeństwo", "oświetlenie", "nieobecny", "włamywacz", "dom"]
+  },
   "permissions": [
     "homey:manager:api"
   ],
