@@ -3,7 +3,15 @@
   "type": "condition",
   "invertible": true,
   "title": {
+    "en": "Simulation is !{{enabled|disabled}}",
     "nl": "Simulatie is !{{ingeschakeld|uitgeschakeld}}",
-    "en": "Simulation is !{{enabled|disabled}}"
+    "da": "Simulering er !{{aktiveret|deaktiveret}}",
+    "de": "Simulation ist !{{aktiviert|deaktiviert}}",
+    "es": "La simulación está !{{activada|desactivada}}",
+    "fr": "La simulation est !{{activée|désactivée}}",
+    "it": "La simulazione è !{{attivata|disattivata}}",
+    "no": "Simulering er !{{aktivert|deaktivert}}",
+    "pl": "Symulacja jest !{{włączona|wyłączona}}",
+    "sv": "Simulering är !{{aktiverad|inaktiverad}}"
   }
 }

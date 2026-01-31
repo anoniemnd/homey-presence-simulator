@@ -169,6 +169,9 @@ https://github.com/anoniemnd/homey-presence-simulator/issues
 
 ## 📋 Changelog
 
+### Version 1.0.4
+- **Added**: Full support for all 10 languages across all app components (flow cards, name, description)
+
 ### Version 1.0.3
 - **Fixed**: "Last activity" indicator showed oldest event instead of most recent event
 - **Fixed**: Singular/plural forms now display correctly (e.g., "1 day ago" instead of "1 day/days ago")

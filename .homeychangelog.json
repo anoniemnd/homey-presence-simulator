@@ -46,5 +46,17 @@
     "no": "- Rettet: 'Siste aktivitet'-indikatoren viste eldste hendelse i stedet for nyeste hendelse\n- Rettet: Entall/flertallsformer vises nå korrekt (f.eks. 'for 1 dag siden' i stedet for 'for 1 dag/dager siden')\n- Rettet: Justerte lyse bakgrunnsgrå-toner slik at inversjon i mørk modus gir en mykere mørkegrå i stedet for hard ren svart.",
     "da": "- Rettet: 'Seneste aktivitet'-indikatoren viste ældste hændelse i stedet for nyeste hændelse\n- Rettet: Ental/flertal-former vises nu korrekt (f.eks. 'for 1 dag siden' i stedet for 'for 1 dag/dage siden')\n- Rettet: Justerede lyse baggrundsgrå-toner, så mørk tilstand-inversionen giver en blødere mørkegrå i stedet for hård ren sort.",
     "pl": "- Naprawiono: Wskaźnik 'Ostatnia aktywność' pokazywał najstarsze zdarzenie zamiast najnowszego\n- Naprawiono: Formy liczby pojedynczej/mnogiej są teraz wyświetlane poprawnie (np. '1 dzień temu' zamiast '1 dzień/dni temu')\n- Naprawiono: Dostosowano jasne odcienie szarości tła, aby inwersja trybu ciemnego dawała miększą ciemnoszarą barwę zamiast ostrej czystej czerni."
+  },
+  "1.0.4": {
+    "en": "- Added: Full support for all 10 languages across all app components (flow cards, name, description)",
+    "nl": "- Toegevoegd: Volledige ondersteuning voor alle 10 talen in alle app-onderdelen (flow cards, naam, beschrijving)",
+    "de": "- Hinzugefügt: Vollständige Unterstützung für alle 10 Sprachen in allen App-Komponenten (Flow-Cards, Name, Beschreibung)",
+    "fr": "- Ajouté : Prise en charge complète des 10 langues dans tous les composants de l'application (cartes Flow, nom, description)",
+    "es": "- Añadido: Soporte completo para los 10 idiomas en todos los componentes de la aplicación (tarjetas Flow, nombre, descripción)",
+    "it": "- Aggiunto: Supporto completo per tutte le 10 lingue in tutti i componenti dell'app (schede Flow, nome, descrizione)",
+    "sv": "- Tillagt: Fullt stöd för alla 10 språk i alla appkomponenter (Flow-kort, namn, beskrivning)",
+    "no": "- Lagt til: Full støtte for alle 10 språk i alle app-komponenter (Flow-kort, navn, beskrivelse)",
+    "da": "- Tilføjet: Fuld understøttelse af alle 10 sprog i alle app-komponenter (Flow-kort, navn, beskrivelse)",
+    "pl": "- Dodano: Pełne wsparcie dla wszystkich 10 języków we wszystkich komponentach aplikacji (karty Flow, nazwa, opis)"
   }
 }
